@@ -11,10 +11,6 @@ func (h *handler) SelectObjectContentHandler(w http.ResponseWriter, r *http.Requ
 	h.logAndSendError(w, "not implemented", api.GetReqInfo(r.Context()), errors.GetAPIError(errors.ErrNotImplemented))
 }
 
-func (h *handler) GetBucketLifecycleHandler(w http.ResponseWriter, r *http.Request) {
-	h.logAndSendError(w, "not implemented", api.GetReqInfo(r.Context()), errors.GetAPIError(errors.ErrNotImplemented))
-}
-
 func (h *handler) GetBucketEncryptionHandler(w http.ResponseWriter, r *http.Request) {
 	h.logAndSendError(w, "not implemented", api.GetReqInfo(r.Context()), errors.GetAPIError(errors.ErrNotImplemented))
 }
@@ -48,10 +44,6 @@ func (h *handler) ListenBucketNotificationHandler(w http.ResponseWriter, r *http
 }
 
 func (h *handler) ListObjectsV2MHandler(w http.ResponseWriter, r *http.Request) {
-	h.logAndSendError(w, "not implemented", api.GetReqInfo(r.Context()), errors.GetAPIError(errors.ErrNotImplemented))
-}
-
-func (h *handler) PutBucketLifecycleHandler(w http.ResponseWriter, r *http.Request) {
 	h.logAndSendError(w, "not implemented", api.GetReqInfo(r.Context()), errors.GetAPIError(errors.ErrNotImplemented))
 }
 

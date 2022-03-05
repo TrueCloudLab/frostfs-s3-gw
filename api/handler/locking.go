@@ -19,6 +19,7 @@ const (
 	yearDuration = 365 * dayDuration
 
 	enabledValue   = "Enabled"
+	disabledValue  = "Disabled"
 	governanceMode = "GOVERNANCE"
 	complianceMode = "COMPLIANCE"
 	legalHoldOn    = "ON"

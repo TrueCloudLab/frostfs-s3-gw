@@ -11,10 +11,6 @@ func (h *handler) DeleteBucketPolicyHandler(w http.ResponseWriter, r *http.Reque
 	h.logAndSendError(w, "not supported", api.GetReqInfo(r.Context()), errors.GetAPIError(errors.ErrNotSupported))
 }
 
-func (h *handler) DeleteBucketLifecycleHandler(w http.ResponseWriter, r *http.Request) {
-	h.logAndSendError(w, "not supported", api.GetReqInfo(r.Context()), errors.GetAPIError(errors.ErrNotSupported))
-}
-
 func (h *handler) DeleteBucketEncryptionHandler(w http.ResponseWriter, r *http.Request) {
 	h.logAndSendError(w, "not supported", api.GetReqInfo(r.Context()), errors.GetAPIError(errors.ErrNotSupported))
 }
