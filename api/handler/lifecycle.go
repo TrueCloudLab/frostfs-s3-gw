@@ -123,7 +123,31 @@ func checkLifecycleConfiguration(conf *data.LifecycleConfiguration) error {
 		if rule.Status != enabledValue && rule.Status != disabledValue {
 			return apiErrors.GetAPIError(apiErrors.ErrMalformedXML)
 		}
+		if rule.Filter != nil {
+			if rule.Filter.ObjectSizeGreaterThan < 0 || rule.Filter.ObjectSizeLessThan < 0 {
+				return apiErrors.GetAPIError(apiErrors.ErrMalformedXML)
+			}
+
+			if !filterContainsOneOption(rule.Filter) {
+				return apiErrors.GetAPIError(apiErrors.ErrMalformedXML)
+			}
+		}
 	}
 
 	return nil
+}
+
+func filterContainsOneOption(filter *data.LifecycleRuleFilter) bool {
+	exactlyOneOption := 0
+	if filter.Prefix != "" {
+		exactlyOneOption++
+	}
+	if filter.And != nil {
+		exactlyOneOption++
+	}
+	if filter.Tag != nil {
+		exactlyOneOption++
+	}
+
+	return exactlyOneOption == 1
 }

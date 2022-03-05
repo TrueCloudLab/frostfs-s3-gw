@@ -9,15 +9,15 @@ type (
 	}
 
 	Rule struct {
-		AbortIncompleteMultipartUpload AbortIncompleteMultipartUpload `xml:"AbortIncompleteMultipartUpload" json:"AbortIncompleteMultipartUpload"`
-		Expiration                     Expiration                     `xml:"Expiration" json:"Expiration"`
-		Filter                         LifecycleRuleFilter            `xml:"Filter" json:"Filter"`
-		ID                             string                         `xml:"ID" json:"ID"`
-		NoncurrentVersionExpiration    NoncurrentVersionExpiration    `xml:"NoncurrentVersionExpiration" json:"NoncurrentVersionExpiration"`
-		NoncurrentVersionTransitions   []NoncurrentVersionTransition  `xml:"NoncurrentVersionTransition" json:"NoncurrentVersionTransition"`
-		Prefix                         string                         `xml:"Prefix" json:"Prefix"`
-		Status                         string                         `xml:"Status" json:"Status"`
-		Transitions                    []Transition                   `xml:"Transition" json:"Transition"`
+		AbortIncompleteMultipartUpload *AbortIncompleteMultipartUpload `xml:"AbortIncompleteMultipartUpload" json:"AbortIncompleteMultipartUpload"`
+		Expiration                     *Expiration                     `xml:"Expiration" json:"Expiration"`
+		Filter                         *LifecycleRuleFilter            `xml:"Filter" json:"Filter"`
+		ID                             string                          `xml:"ID" json:"ID"`
+		NoncurrentVersionExpiration    *NoncurrentVersionExpiration    `xml:"NoncurrentVersionExpiration" json:"NoncurrentVersionExpiration"`
+		NoncurrentVersionTransitions   []NoncurrentVersionTransition   `xml:"NoncurrentVersionTransition" json:"NoncurrentVersionTransition"`
+		Prefix                         string                          `xml:"Prefix" json:"Prefix"`
+		Status                         string                          `xml:"Status" json:"Status"`
+		Transitions                    []Transition                    `xml:"Transition" json:"Transition"`
 	}
 
 	AbortIncompleteMultipartUpload struct {
@@ -31,11 +31,11 @@ type (
 	}
 
 	LifecycleRuleFilter struct {
-		And                   LifecycleRuleAndOperator `xml:"And" json:"And"`
-		ObjectSizeGreaterThan int64                    `xml:"ObjectSizeGreaterThan" json:"ObjectSizeGreaterThan"`
-		ObjectSizeLessThan    int64                    `xml:"ObjectSizeLessThan" json:"ObjectSizeLessThan"`
-		Prefix                string                   `xml:"Prefix" json:"Prefix"`
-		Tag                   Tag                      `xml:"Tag" json:"Tag"`
+		And                   *LifecycleRuleAndOperator `xml:"And" json:"And"`
+		ObjectSizeGreaterThan int64                     `xml:"ObjectSizeGreaterThan" json:"ObjectSizeGreaterThan"`
+		ObjectSizeLessThan    int64                     `xml:"ObjectSizeLessThan" json:"ObjectSizeLessThan"`
+		Prefix                string                    `xml:"Prefix" json:"Prefix"`
+		Tag                   *Tag                      `xml:"Tag" json:"Tag"`
 	}
 
 	LifecycleRuleAndOperator struct {
