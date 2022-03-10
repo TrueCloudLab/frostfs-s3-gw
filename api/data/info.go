@@ -57,9 +57,15 @@ type (
 
 	// BucketSettings stores settings such as versioning.
 	BucketSettings struct {
-		Versioning             string                   `json:"versioning"`
-		LockConfiguration      *ObjectLockConfiguration `json:"lock_configuration"`
-		LifecycleConfiguration *LifecycleConfiguration  `json:"lifecycle_configuration"`
+		Versioning        string                   `json:"versioning"`
+		LockConfiguration *ObjectLockConfiguration `json:"lock_configuration"`
+		LifecycleConfig   *LifecycleConfig         `json:"lifecycle_configuration"`
+	}
+
+	// LifecycleConfig stores lifecycle config old and current settings.
+	LifecycleConfig struct {
+		OldConfigurationID   string `json:"old_id"`
+		CurrentConfiguration *LifecycleConfiguration
 	}
 
 	// CORSConfiguration stores CORS configuration of a request.
@@ -125,3 +131,6 @@ func (b BucketSettings) VersioningEnabled() bool {
 func (b BucketSettings) VersioningSuspended() bool {
 	return b.Versioning == VersioningSuspended
 }
+
+// ExpirationObject returns name of system object for expiration tick object.
+func (o *ObjectInfo) ExpirationObject() string { return ".expiration." + o.Name }

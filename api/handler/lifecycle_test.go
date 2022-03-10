@@ -20,6 +20,10 @@ func TestCheckLifecycleConfiguration(t *testing.T) {
 		rules[i] = data.Rule{ID: strconv.Itoa(i), Status: disabledValue}
 	}
 
+	prefix := "prefix"
+	invalidSize := int64(-1)
+	days := int64(1)
+
 	for _, tc := range []struct {
 		name          string
 		configuration *data.LifecycleConfiguration
@@ -28,8 +32,9 @@ func TestCheckLifecycleConfiguration(t *testing.T) {
 		{
 			name: "basic",
 			configuration: &data.LifecycleConfiguration{Rules: []data.Rule{{
-				ID:     "Some ID",
-				Status: "Disabled",
+				ID:         "Some ID",
+				Status:     "Disabled",
+				Expiration: &data.Expiration{Days: &days},
 			}}},
 			noError: true,
 		},
@@ -60,7 +65,7 @@ func TestCheckLifecycleConfiguration(t *testing.T) {
 			configuration: &data.LifecycleConfiguration{Rules: []data.Rule{{
 				Status: enabledValue,
 				Filter: &data.LifecycleRuleFilter{
-					Prefix: "prefix",
+					Prefix: &prefix,
 					Tag:    &data.Tag{},
 				},
 			}}},
@@ -70,7 +75,7 @@ func TestCheckLifecycleConfiguration(t *testing.T) {
 			configuration: &data.LifecycleConfiguration{Rules: []data.Rule{{
 				Status: enabledValue,
 				Filter: &data.LifecycleRuleFilter{
-					ObjectSizeGreaterThan: -1,
+					ObjectSizeGreaterThan: &invalidSize,
 				},
 			}}},
 		},
@@ -79,7 +84,7 @@ func TestCheckLifecycleConfiguration(t *testing.T) {
 			configuration: &data.LifecycleConfiguration{Rules: []data.Rule{{
 				Status: enabledValue,
 				Filter: &data.LifecycleRuleFilter{
-					ObjectSizeLessThan: -1,
+					ObjectSizeLessThan: &invalidSize,
 				},
 			}}},
 		},
@@ -106,13 +111,14 @@ func TestBucketLifecycleConfiguration(t *testing.T) {
 	hc.Handler().GetBucketLifecycleHandler(w, r)
 	assertS3Error(t, w, apiErrors.GetAPIError(apiErrors.ErrNoSuchLifecycleConfiguration))
 
+	days := int64(1)
 	lifecycleConf := &data.LifecycleConfiguration{
 		XMLName: xmlName("LifecycleConfiguration"),
 		Rules: []data.Rule{
 			{
-				AbortIncompleteMultipartUpload: &data.AbortIncompleteMultipartUpload{},
-				ID:                             "Test",
-				Status:                         "Disabled",
+				Expiration: &data.Expiration{Days: &days},
+				ID:         "Test",
+				Status:     "Disabled",
 			},
 		}}
 	w, r = prepareTestRequest(t, bktName, "", lifecycleConf)

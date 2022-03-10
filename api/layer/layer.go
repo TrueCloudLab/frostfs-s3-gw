@@ -191,6 +191,8 @@ type (
 		GetBucketSettings(ctx context.Context, bktInfo *data.BucketInfo) (*data.BucketSettings, error)
 		PutBucketSettings(ctx context.Context, p *PutSettingsParams) error
 
+		ScheduleLifecycle(ctx context.Context, bktInfo *data.BucketInfo, new *data.LifecycleConfiguration) error
+
 		PutBucketCORS(ctx context.Context, p *PutCORSParams) error
 		GetBucketCORS(ctx context.Context, bktInfo *data.BucketInfo) (*data.CORSConfiguration, error)
 		DeleteBucketCORS(ctx context.Context, bktInfo *data.BucketInfo) error
@@ -288,7 +290,9 @@ func (n *layer) Initialize(ctx context.Context, c EventListener) error {
 		return fmt.Errorf("already initialized")
 	}
 
-	// todo add notification handlers (e.g. for lifecycles)
+	if err := c.Subscribe(ctx, ExpireTopic, MsgHandlerFunc(n.handleExpireTick)); err != nil {
+		return fmt.Errorf("couldn't initialize layer: %w", err)
+	}
 
 	c.Listen(ctx)
 

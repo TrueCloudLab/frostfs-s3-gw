@@ -9,7 +9,6 @@ import (
 	"github.com/nspcc-dev/neofs-s3-gw/api"
 	"github.com/nspcc-dev/neofs-s3-gw/api/data"
 	apiErrors "github.com/nspcc-dev/neofs-s3-gw/api/errors"
-	"github.com/nspcc-dev/neofs-s3-gw/api/layer"
 )
 
 func (h *handler) PutBucketLifecycleHandler(w http.ResponseWriter, r *http.Request) {
@@ -61,13 +60,13 @@ func (h *handler) GetBucketLifecycleHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if settings.LifecycleConfiguration == nil {
+	if settings.LifecycleConfig == nil || settings.LifecycleConfig.CurrentConfiguration == nil {
 		h.logAndSendError(w, "lifecycle configuration doesn't exist", reqInfo,
 			apiErrors.GetAPIError(apiErrors.ErrNoSuchLifecycleConfiguration))
 		return
 	}
 
-	if err = api.EncodeToResponse(w, settings.LifecycleConfiguration); err != nil {
+	if err = api.EncodeToResponse(w, settings.LifecycleConfig.CurrentConfiguration); err != nil {
 		h.logAndSendError(w, "something went wrong", reqInfo, err)
 	}
 }
@@ -93,27 +92,19 @@ func (h *handler) DeleteBucketLifecycleHandler(w http.ResponseWriter, r *http.Re
 }
 
 func (h *handler) updateLifecycleConfiguration(ctx context.Context, bktInfo *data.BucketInfo, lifecycleConf *data.LifecycleConfiguration) error {
-	settings, err := h.obj.GetBucketSettings(ctx, bktInfo)
-	if err != nil {
-		return fmt.Errorf("couldn't get bucket settings: %w", err)
-	}
-
-	settings.LifecycleConfiguration = lifecycleConf
-	sp := &layer.PutSettingsParams{
-		BktInfo:  bktInfo,
-		Settings: settings,
-	}
-
-	if err = h.obj.PutBucketSettings(ctx, sp); err != nil {
-		return fmt.Errorf("couldn't put bucket settings: %w", err)
+	// todo consider run as separate goroutine
+	if err := h.obj.ScheduleLifecycle(ctx, bktInfo, lifecycleConf); err != nil {
+		return fmt.Errorf("couldn't apply lifecycle: %w", err)
 	}
 
 	return nil
 }
 
 func checkLifecycleConfiguration(conf *data.LifecycleConfiguration) error {
+	err := apiErrors.GetAPIError(apiErrors.ErrMalformedXML)
+
 	if len(conf.Rules) == 0 {
-		return apiErrors.GetAPIError(apiErrors.ErrMalformedXML)
+		return err
 	}
 	if len(conf.Rules) > 1000 {
 		return fmt.Errorf("you cannot have more than 1000 rules")
@@ -121,16 +112,34 @@ func checkLifecycleConfiguration(conf *data.LifecycleConfiguration) error {
 
 	for _, rule := range conf.Rules {
 		if rule.Status != enabledValue && rule.Status != disabledValue {
-			return apiErrors.GetAPIError(apiErrors.ErrMalformedXML)
+			return err
 		}
+		if rule.Prefix != nil && rule.Filter != nil {
+			return err
+		}
+
 		if rule.Filter != nil {
-			if rule.Filter.ObjectSizeGreaterThan < 0 || rule.Filter.ObjectSizeLessThan < 0 {
-				return apiErrors.GetAPIError(apiErrors.ErrMalformedXML)
+			if rule.Filter.ObjectSizeGreaterThan != nil && *rule.Filter.ObjectSizeGreaterThan < 0 ||
+				rule.Filter.ObjectSizeLessThan != nil && *rule.Filter.ObjectSizeLessThan < 0 {
+				return err
 			}
 
 			if !filterContainsOneOption(rule.Filter) {
-				return apiErrors.GetAPIError(apiErrors.ErrMalformedXML)
+				return err
 			}
+		}
+
+		if !ruleHasAction(rule) {
+			return err
+		}
+
+		// currently only expiration action is supported
+		if rule.Expiration == nil {
+			return err
+		}
+		if rule.Expiration.Days != nil && rule.Expiration.Date != nil ||
+			rule.Expiration.Days == nil && rule.Expiration.Date == nil {
+			return err
 		}
 	}
 
@@ -139,7 +148,7 @@ func checkLifecycleConfiguration(conf *data.LifecycleConfiguration) error {
 
 func filterContainsOneOption(filter *data.LifecycleRuleFilter) bool {
 	exactlyOneOption := 0
-	if filter.Prefix != "" {
+	if filter.Prefix != nil {
 		exactlyOneOption++
 	}
 	if filter.And != nil {
@@ -150,4 +159,10 @@ func filterContainsOneOption(filter *data.LifecycleRuleFilter) bool {
 	}
 
 	return exactlyOneOption == 1
+}
+
+func ruleHasAction(rule data.Rule) bool {
+	return rule.AbortIncompleteMultipartUpload != nil || rule.Expiration != nil ||
+		rule.NoncurrentVersionExpiration != nil || len(rule.Transitions) != 0 ||
+		len(rule.NoncurrentVersionTransitions) != 0
 }

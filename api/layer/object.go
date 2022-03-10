@@ -298,6 +298,13 @@ func (n *layer) PutObject(ctx context.Context, p *PutObjectParams) (*data.Extend
 		NodeVersion: newVersion,
 	}
 
+	// todo filling api.AmzExpiration header
+	if err = n.putLifecycleObjects(ctx, p.BktInfo, objInfo, bktSettings.LifecycleConfig); err != nil {
+		return nil, fmt.Errorf("couldn't put expiration system objects: %w", err)
+	}
+
+	n.listsCache.CleanCacheEntriesContainingObject(p.Object, p.BktInfo.CID)
+
 	n.cache.PutObjectWithName(owner, extendedObjInfo)
 
 	return extendedObjInfo, nil

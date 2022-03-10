@@ -2,7 +2,11 @@ package handler
 
 import (
 	"bytes"
+	"context"
+	"fmt"
 	"net/http"
+	"net/url"
+	"time"
 
 	"github.com/TrueCloudLab/frostfs-s3-gw/api"
 	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
@@ -103,6 +107,11 @@ func (h *handler) HeadObjectHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err = h.setExpirationHeader(r.Context(), bktInfo, info, w.Header()); err != nil {
+		h.logAndSendError(w, "could not get expiration info", reqInfo, err)
+		return
+	}
+
 	bktSettings, err := h.obj.GetBucketSettings(r.Context(), bktInfo)
 	if err != nil {
 		h.logAndSendError(w, "could not get bucket settings", reqInfo, err)
@@ -156,4 +165,25 @@ func writeLockHeaders(h http.Header, legalHold *data.LegalHold, retention *data.
 		h.Set(api.AmzObjectLockRetainUntilDate, retention.RetainUntilDate)
 		h.Set(api.AmzObjectLockMode, retention.Mode)
 	}
+}
+
+func (h *handler) setExpirationHeader(ctx context.Context, bktInfo *data.BucketInfo, objInfo *data.ObjectInfo, header http.Header) error {
+	var expirationObjInfo data.ObjectInfo
+
+	// todo get expiration object info
+
+	ruleID := expirationObjInfo.Headers[layer.AttributeExpireRuleID]
+
+	expDate, err := time.Parse(time.RFC3339, expirationObjInfo.Headers[layer.AttributeExpireDate])
+	if err != nil {
+		return fmt.Errorf("couldn't parse ivalid expiration time: %w", err)
+	}
+
+	writeExpirationHeader(header, ruleID, expDate)
+	return nil
+}
+
+func writeExpirationHeader(h http.Header, ruleID string, expDate time.Time) {
+	header := "expiry-date=\"%s\", rule-id=\"%s\""
+	h.Set(api.AmzExpiration, fmt.Sprintf(header, expDate.UTC().Format(http.TimeFormat), url.QueryEscape(ruleID)))
 }
