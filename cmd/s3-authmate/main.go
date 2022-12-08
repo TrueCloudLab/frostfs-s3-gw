@@ -32,12 +32,24 @@ import (
 )
 
 const (
-	poolConnectTimeout = 5 * time.Second
-	poolRequestTimeout = 5 * time.Second
+	poolDialTimeout        = 5 * time.Second
+	poolHealthcheckTimeout = 5 * time.Second
+	poolRebalanceInterval  = 30 * time.Second
+	poolStreamTimeout      = 10 * time.Second
+
 	// a month.
 	defaultLifetime          = 30 * 24 * time.Hour
 	defaultPresignedLifetime = 12 * time.Hour
 )
+
+type PoolConfig struct {
+	Key                *ecdsa.PrivateKey
+	Address            string
+	DialTimeout        time.Duration
+	HealthcheckTimeout time.Duration
+	StreamTimeout      time.Duration
+	RebalanceInterval  time.Duration
+}
 
 var (
 	walletPathFlag           string
@@ -65,6 +77,12 @@ var (
 	containerPolicies        string
 	awcCliCredFile           string
 	timeoutFlag              time.Duration
+
+	// pool timeouts flag.
+	poolDialTimeoutFlag        time.Duration
+	poolHealthcheckTimeoutFlag time.Duration
+	poolRebalanceIntervalFlag  time.Duration
+	poolStreamTimeoutFlag      time.Duration
 )
 
 const (
@@ -245,6 +263,34 @@ It will be ceil rounded to the nearest amount of epoch.`,
 				Required:    false,
 				Destination: &awcCliCredFile,
 			},
+			&cli.DurationFlag{
+				Name:        "pool-dial-timeout",
+				Usage:       `Timeout for connection to the node in pool to be established`,
+				Required:    false,
+				Destination: &poolDialTimeoutFlag,
+				Value:       poolDialTimeout,
+			},
+			&cli.DurationFlag{
+				Name:        "pool-healthcheck-timeout",
+				Usage:       `Timeout for request to node to decide if it is alive`,
+				Required:    false,
+				Destination: &poolHealthcheckTimeoutFlag,
+				Value:       poolHealthcheckTimeout,
+			},
+			&cli.DurationFlag{
+				Name:        "pool-rebalance-interval",
+				Usage:       `Interval for updating nodes health status`,
+				Required:    false,
+				Destination: &poolRebalanceIntervalFlag,
+				Value:       poolRebalanceInterval,
+			},
+			&cli.DurationFlag{
+				Name:        "pool-stream-timeout",
+				Usage:       `Timeout for individual operation in streaming RPC`,
+				Required:    false,
+				Destination: &poolStreamTimeoutFlag,
+				Value:       poolStreamTimeout,
+			},
 		},
 		Action: func(c *cli.Context) error {
 			ctx, log := prepare()
@@ -258,7 +304,16 @@ It will be ceil rounded to the nearest amount of epoch.`,
 			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
 
-			frostFS, err := createFrostFS(ctx, log, &key.PrivateKey, peerAddressFlag)
+			poolCfg := PoolConfig{
+				Key:                &key.PrivateKey,
+				Address:            peerAddressFlag,
+				DialTimeout:        poolDialTimeoutFlag,
+				HealthcheckTimeout: poolHealthcheckTimeoutFlag,
+				StreamTimeout:      poolStreamTimeoutFlag,
+				RebalanceInterval:  poolRebalanceIntervalFlag,
+			}
+
+			frostFS, err := createFrostFS(ctx, log, poolCfg)
 			if err != nil {
 				return cli.Exit(fmt.Sprintf("failed to create FrostFS component: %s", err), 2)
 			}
@@ -542,6 +597,34 @@ func obtainSecret() *cli.Command {
 				Required:    true,
 				Destination: &accessKeyIDFlag,
 			},
+			&cli.DurationFlag{
+				Name:        "pool-dial-timeout",
+				Usage:       `Timeout for connection to the node in pool to be established`,
+				Required:    false,
+				Destination: &poolDialTimeoutFlag,
+				Value:       poolDialTimeout,
+			},
+			&cli.DurationFlag{
+				Name:        "pool-healthcheck-timeout",
+				Usage:       `Timeout for request to node to decide if it is alive`,
+				Required:    false,
+				Destination: &poolHealthcheckTimeoutFlag,
+				Value:       poolHealthcheckTimeout,
+			},
+			&cli.DurationFlag{
+				Name:        "pool-rebalance-interval",
+				Usage:       `Interval for updating nodes health status`,
+				Required:    false,
+				Destination: &poolRebalanceIntervalFlag,
+				Value:       poolRebalanceInterval,
+			},
+			&cli.DurationFlag{
+				Name:        "pool-stream-timeout",
+				Usage:       `Timeout for individual operation in streaming RPC`,
+				Required:    false,
+				Destination: &poolStreamTimeoutFlag,
+				Value:       poolStreamTimeout,
+			},
 		},
 		Action: func(c *cli.Context) error {
 			ctx, log := prepare()
@@ -555,7 +638,16 @@ func obtainSecret() *cli.Command {
 			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
 
-			frostFS, err := createFrostFS(ctx, log, &key.PrivateKey, peerAddressFlag)
+			poolCfg := PoolConfig{
+				Key:                &key.PrivateKey,
+				Address:            peerAddressFlag,
+				DialTimeout:        poolDialTimeoutFlag,
+				HealthcheckTimeout: poolHealthcheckTimeoutFlag,
+				StreamTimeout:      poolStreamTimeoutFlag,
+				RebalanceInterval:  poolRebalanceIntervalFlag,
+			}
+
+			frostFS, err := createFrostFS(ctx, log, poolCfg)
 			if err != nil {
 				return cli.Exit(fmt.Sprintf("failed to create FrostFS component: %s", err), 2)
 			}
@@ -591,14 +683,16 @@ func obtainSecret() *cli.Command {
 	return command
 }
 
-func createFrostFS(ctx context.Context, log *zap.Logger, key *ecdsa.PrivateKey, peerAddress string) (authmate.FrostFS, error) {
+func createFrostFS(ctx context.Context, log *zap.Logger, cfg PoolConfig) (authmate.FrostFS, error) {
 	log.Debug("prepare connection pool")
 
 	var prm pool.InitParameters
-	prm.SetKey(key)
-	prm.SetNodeDialTimeout(poolConnectTimeout)
-	prm.SetHealthcheckTimeout(poolRequestTimeout)
-	prm.AddNode(pool.NewNodeParam(1, peerAddress, 1))
+	prm.SetKey(cfg.Key)
+	prm.SetNodeDialTimeout(cfg.DialTimeout)
+	prm.SetHealthcheckTimeout(cfg.HealthcheckTimeout)
+	prm.SetNodeStreamTimeout(cfg.StreamTimeout)
+	prm.SetClientRebalanceInterval(cfg.RebalanceInterval)
+	prm.AddNode(pool.NewNodeParam(1, cfg.Address, 1))
 
 	p, err := pool.NewPool(prm)
 	if err != nil {
