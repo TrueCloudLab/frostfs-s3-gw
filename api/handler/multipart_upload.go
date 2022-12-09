@@ -348,6 +348,13 @@ func (h *handler) UploadPartCopy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.log.Debug("copy details",
+		zap.String("reqId", reqInfo.RequestID),
+		zap.String("bucket", reqInfo.BucketName),
+		zap.Stringer("cid", bktInfo.CID),
+		zap.String("object", reqInfo.ObjectName),
+		zap.Stringer("oid", info.ID))
+
 	response := UploadPartCopyResponse{
 		ETag:         info.HashSum,
 		LastModified: info.Created.UTC().Format(time.RFC3339),
