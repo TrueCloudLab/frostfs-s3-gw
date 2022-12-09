@@ -730,6 +730,9 @@ func (h *handler) CreateBucketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.log.Debug("target details", zap.String("reqId", reqInfo.RequestID),
+		zap.String("bucket", reqInfo.BucketName), zap.Stringer("cid", bktInfo.CID))
+
 	if p.ObjectLockEnabled {
 		sp := &layer.PutSettingsParams{
 			BktInfo:  bktInfo,

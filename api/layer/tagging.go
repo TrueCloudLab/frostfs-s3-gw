@@ -4,11 +4,13 @@ import (
 	"context"
 	errorsStd "errors"
 
+	"github.com/TrueCloudLab/frostfs-s3-gw/api"
 	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
 	"github.com/TrueCloudLab/frostfs-s3-gw/api/errors"
 	cid "github.com/TrueCloudLab/frostfs-sdk-go/container/id"
 	oid "github.com/TrueCloudLab/frostfs-sdk-go/object/id"
 	"github.com/TrueCloudLab/frostfs-sdk-go/user"
+	"go.uber.org/zap"
 )
 
 type GetObjectTaggingParams struct {
@@ -173,6 +175,14 @@ func (n *layer) getNodeVersion(ctx context.Context, objVersion *ObjectVersion) (
 
 	if err == nil && version.IsDeleteMarker() && !objVersion.NoErrorOnDeleteMarker || errorsStd.Is(err, ErrNodeNotFound) {
 		return nil, errors.GetAPIError(errors.ErrNoSuchKey)
+	}
+
+	if err == nil && version != nil && !version.IsDeleteMarker() {
+		reqInfo := api.GetReqInfo(ctx)
+		n.log.Debug("target details",
+			zap.String("reqId", reqInfo.RequestID),
+			zap.String("bucket", objVersion.BktInfo.Name), zap.Stringer("cid", objVersion.BktInfo.CID),
+			zap.String("object", objVersion.ObjectName), zap.Stringer("oid", version.OID))
 	}
 
 	return version, err

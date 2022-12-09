@@ -248,6 +248,12 @@ func (n *layer) PutObject(ctx context.Context, p *PutObjectParams) (*data.Extend
 		return nil, err
 	}
 
+	reqInfo := api.GetReqInfo(ctx)
+	n.log.Debug("put object",
+		zap.String("reqId", reqInfo.RequestID),
+		zap.String("bucket", p.BktInfo.Name), zap.Stringer("cid", p.BktInfo.CID),
+		zap.String("object", p.Object), zap.Stringer("oid", id))
+
 	newVersion.OID = id
 	newVersion.ETag = hex.EncodeToString(hash)
 	if newVersion.ID, err = n.treeService.AddVersion(ctx, p.BktInfo, newVersion); err != nil {
