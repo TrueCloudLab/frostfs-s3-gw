@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"github.com/nspcc-dev/neofs-s3-gw/internal/version"
+	"github.com/TrueCloudLab/frostfs-s3-gw/internal/version"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

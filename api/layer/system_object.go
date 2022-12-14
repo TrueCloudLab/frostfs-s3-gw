@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api/data"
-	"github.com/nspcc-dev/neofs-s3-gw/api/errors"
-	oid "github.com/nspcc-dev/neofs-sdk-go/object/id"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/errors"
+	oid "github.com/TrueCloudLab/frostfs-sdk-go/object/id"
 )
 
 const (

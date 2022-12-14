@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"time"
 
-	cid "github.com/nspcc-dev/neofs-sdk-go/container/id"
-	oid "github.com/nspcc-dev/neofs-sdk-go/object/id"
-	"github.com/nspcc-dev/neofs-sdk-go/user"
+	cid "github.com/TrueCloudLab/frostfs-sdk-go/container/id"
+	oid "github.com/TrueCloudLab/frostfs-sdk-go/object/id"
+	"github.com/TrueCloudLab/frostfs-sdk-go/user"
 )
 
 const (

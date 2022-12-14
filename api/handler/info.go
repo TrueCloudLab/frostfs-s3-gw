@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api"
 )
 
 func (h *handler) GetBucketLocationHandler(w http.ResponseWriter, r *http.Request) {

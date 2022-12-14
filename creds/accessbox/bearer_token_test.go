@@ -3,12 +3,12 @@ package accessbox
 import (
 	"testing"
 
+	"github.com/TrueCloudLab/frostfs-sdk-go/bearer"
+	neofsecdsa "github.com/TrueCloudLab/frostfs-sdk-go/crypto/ecdsa"
+	"github.com/TrueCloudLab/frostfs-sdk-go/eacl"
+	"github.com/TrueCloudLab/frostfs-sdk-go/session"
 	"github.com/google/uuid"
 	"github.com/nspcc-dev/neo-go/pkg/crypto/keys"
-	"github.com/nspcc-dev/neofs-sdk-go/bearer"
-	neofsecdsa "github.com/nspcc-dev/neofs-sdk-go/crypto/ecdsa"
-	"github.com/nspcc-dev/neofs-sdk-go/eacl"
-	"github.com/nspcc-dev/neofs-sdk-go/session"
 	"github.com/stretchr/testify/require"
 )
 

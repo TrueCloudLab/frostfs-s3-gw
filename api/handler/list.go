@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api"
-	"github.com/nspcc-dev/neofs-sdk-go/user"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api"
+	"github.com/TrueCloudLab/frostfs-sdk-go/user"
 )
 
 const maxObjectList = 1000 // Limit number of objects in a listObjectsResponse/listObjectsVersionsResponse.

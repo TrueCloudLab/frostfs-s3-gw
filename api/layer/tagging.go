@@ -4,11 +4,11 @@ import (
 	"context"
 	errorsStd "errors"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api/data"
-	"github.com/nspcc-dev/neofs-s3-gw/api/errors"
-	cid "github.com/nspcc-dev/neofs-sdk-go/container/id"
-	oid "github.com/nspcc-dev/neofs-sdk-go/object/id"
-	"github.com/nspcc-dev/neofs-sdk-go/user"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/errors"
+	cid "github.com/TrueCloudLab/frostfs-sdk-go/container/id"
+	oid "github.com/TrueCloudLab/frostfs-sdk-go/object/id"
+	"github.com/TrueCloudLab/frostfs-sdk-go/user"
 )
 
 type GetObjectTaggingParams struct {

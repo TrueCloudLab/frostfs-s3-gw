@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api/data"
-	oid "github.com/nspcc-dev/neofs-sdk-go/object/id"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
+	oid "github.com/TrueCloudLab/frostfs-sdk-go/object/id"
 )
 
 // TreeService provide interface to interact with tree service using s3 data models.

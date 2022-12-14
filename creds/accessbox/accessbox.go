@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/TrueCloudLab/frostfs-sdk-go/bearer"
+	"github.com/TrueCloudLab/frostfs-sdk-go/netmap"
+	"github.com/TrueCloudLab/frostfs-sdk-go/session"
 	"github.com/nspcc-dev/neo-go/pkg/crypto/keys"
-	"github.com/nspcc-dev/neofs-sdk-go/bearer"
-	"github.com/nspcc-dev/neofs-sdk-go/netmap"
-	"github.com/nspcc-dev/neofs-sdk-go/session"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/hkdf"
 	"google.golang.org/protobuf/proto"

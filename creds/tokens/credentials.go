@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/cache"
+	"github.com/TrueCloudLab/frostfs-s3-gw/creds/accessbox"
+	cid "github.com/TrueCloudLab/frostfs-sdk-go/container/id"
+	oid "github.com/TrueCloudLab/frostfs-sdk-go/object/id"
+	"github.com/TrueCloudLab/frostfs-sdk-go/user"
 	"github.com/nspcc-dev/neo-go/pkg/crypto/keys"
-	"github.com/nspcc-dev/neofs-s3-gw/api/cache"
-	"github.com/nspcc-dev/neofs-s3-gw/creds/accessbox"
-	cid "github.com/nspcc-dev/neofs-sdk-go/container/id"
-	oid "github.com/nspcc-dev/neofs-sdk-go/object/id"
-	"github.com/nspcc-dev/neofs-sdk-go/user"
 )
 
 type (

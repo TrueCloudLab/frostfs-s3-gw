@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/auth"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/metrics"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"github.com/nspcc-dev/neofs-s3-gw/api/auth"
-	"github.com/nspcc-dev/neofs-s3-gw/api/metrics"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 )

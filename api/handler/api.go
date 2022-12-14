@@ -4,9 +4,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api"
-	"github.com/nspcc-dev/neofs-s3-gw/api/layer"
-	"github.com/nspcc-dev/neofs-sdk-go/netmap"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/layer"
+	"github.com/TrueCloudLab/frostfs-sdk-go/netmap"
 	"go.uber.org/zap"
 )
 

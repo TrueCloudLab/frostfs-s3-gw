@@ -2,7 +2,7 @@
 package neofs
 
 import (
-	crypto "github.com/nspcc-dev/neofs-crypto"
+	crypto "github.com/TrueCloudLab/frostfs-crypto"
 	"google.golang.org/protobuf/proto"
 )
 

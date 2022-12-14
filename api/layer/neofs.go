@@ -7,16 +7,16 @@ import (
 	"io"
 	"time"
 
-	"github.com/nspcc-dev/neofs-sdk-go/bearer"
-	"github.com/nspcc-dev/neofs-sdk-go/container"
-	"github.com/nspcc-dev/neofs-sdk-go/container/acl"
-	cid "github.com/nspcc-dev/neofs-sdk-go/container/id"
-	"github.com/nspcc-dev/neofs-sdk-go/eacl"
-	"github.com/nspcc-dev/neofs-sdk-go/netmap"
-	"github.com/nspcc-dev/neofs-sdk-go/object"
-	oid "github.com/nspcc-dev/neofs-sdk-go/object/id"
-	"github.com/nspcc-dev/neofs-sdk-go/session"
-	"github.com/nspcc-dev/neofs-sdk-go/user"
+	"github.com/TrueCloudLab/frostfs-sdk-go/bearer"
+	"github.com/TrueCloudLab/frostfs-sdk-go/container"
+	"github.com/TrueCloudLab/frostfs-sdk-go/container/acl"
+	cid "github.com/TrueCloudLab/frostfs-sdk-go/container/id"
+	"github.com/TrueCloudLab/frostfs-sdk-go/eacl"
+	"github.com/TrueCloudLab/frostfs-sdk-go/netmap"
+	"github.com/TrueCloudLab/frostfs-sdk-go/object"
+	oid "github.com/TrueCloudLab/frostfs-sdk-go/object/id"
+	"github.com/TrueCloudLab/frostfs-sdk-go/session"
+	"github.com/TrueCloudLab/frostfs-sdk-go/user"
 )
 
 // PrmContainerCreate groups parameters of NeoFS.CreateContainer operation.
