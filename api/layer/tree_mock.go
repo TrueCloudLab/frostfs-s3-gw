@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api/data"
-	oid "github.com/nspcc-dev/neofs-sdk-go/object/id"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
+	oid "github.com/TrueCloudLab/frostfs-sdk-go/object/id"
 )
 
 type TreeServiceMock struct {

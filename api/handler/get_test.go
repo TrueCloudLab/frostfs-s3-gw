@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api/data"
-	"github.com/nspcc-dev/neofs-s3-gw/api/errors"
-	"github.com/nspcc-dev/neofs-s3-gw/api/layer"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/errors"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/layer"
 	"github.com/stretchr/testify/require"
 )
 

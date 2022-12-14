@@ -4,8 +4,8 @@ import (
 	"context"
 	errorsStd "errors"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api/data"
-	"github.com/nspcc-dev/neofs-s3-gw/api/errors"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/errors"
 )
 
 func (n *layer) GetObjectTaggingAndLock(ctx context.Context, objVersion *ObjectVersion, nodeVersion *data.NodeVersion) (map[string]string, *data.LockInfo, error) {

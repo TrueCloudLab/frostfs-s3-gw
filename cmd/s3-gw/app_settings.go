@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api/resolver"
-	"github.com/nspcc-dev/neofs-s3-gw/internal/version"
-	"github.com/nspcc-dev/neofs-sdk-go/pool"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/resolver"
+	"github.com/TrueCloudLab/frostfs-s3-gw/internal/version"
+	"github.com/TrueCloudLab/frostfs-sdk-go/pool"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"

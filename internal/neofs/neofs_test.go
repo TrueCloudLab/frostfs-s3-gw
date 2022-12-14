@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api/layer"
-	apistatus "github.com/nspcc-dev/neofs-sdk-go/client/status"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/layer"
+	apistatus "github.com/TrueCloudLab/frostfs-sdk-go/client/status"
 	"github.com/stretchr/testify/require"
 )
 

@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/handler"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/layer"
 	"github.com/nats-io/nats.go"
-	"github.com/nspcc-dev/neofs-s3-gw/api/handler"
-	"github.com/nspcc-dev/neofs-s3-gw/api/layer"
 	"go.uber.org/zap"
 )
 

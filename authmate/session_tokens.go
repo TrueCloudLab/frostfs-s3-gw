@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	apisession "github.com/nspcc-dev/neofs-api-go/v2/session"
-	cid "github.com/nspcc-dev/neofs-sdk-go/container/id"
-	"github.com/nspcc-dev/neofs-sdk-go/session"
+	apisession "github.com/TrueCloudLab/frostfs-api-go/v2/session"
+	cid "github.com/TrueCloudLab/frostfs-sdk-go/container/id"
+	"github.com/TrueCloudLab/frostfs-sdk-go/session"
 )
 
 type (

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package accessbox;
 
-option go_package = "github.com/nspcc-dev/neofs-s3-gw/creds/tokenbox;accessbox";
+option go_package = "github.com/TrueCloudLab/frostfs-s3-gw/creds/tokenbox;accessbox";
 
 
 

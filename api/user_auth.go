@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/auth"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/errors"
 	"github.com/gorilla/mux"
-	"github.com/nspcc-dev/neofs-s3-gw/api/auth"
-	"github.com/nspcc-dev/neofs-s3-gw/api/errors"
 	"go.uber.org/zap"
 )
 

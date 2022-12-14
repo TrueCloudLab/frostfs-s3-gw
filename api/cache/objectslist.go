@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
+	cid "github.com/TrueCloudLab/frostfs-sdk-go/container/id"
 	"github.com/bluele/gcache"
-	"github.com/nspcc-dev/neofs-s3-gw/api/data"
-	cid "github.com/nspcc-dev/neofs-sdk-go/container/id"
 	"go.uber.org/zap"
 )
 

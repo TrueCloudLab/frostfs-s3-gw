@@ -1,8 +1,10 @@
-module github.com/nspcc-dev/neofs-s3-gw
+module github.com/TrueCloudLab/frostfs-s3-gw
 
 go 1.17
 
 require (
+	github.com/TrueCloudLab/frostfs-api-go/v2 v2.0.0-20221212144048-1351b6656d68
+	github.com/TrueCloudLab/frostfs-sdk-go v0.0.0-20221214065929-4c779423f556
 	github.com/aws/aws-sdk-go v1.44.6
 	github.com/bluele/gcache v0.0.2
 	github.com/google/uuid v1.3.0
@@ -10,8 +12,6 @@ require (
 	github.com/minio/sio v0.3.0
 	github.com/nats-io/nats.go v1.13.1-0.20220121202836-972a071d373d
 	github.com/nspcc-dev/neo-go v0.99.4
-	github.com/nspcc-dev/neofs-api-go/v2 v2.14.0
-	github.com/nspcc-dev/neofs-sdk-go v1.0.0-rc.7.0.20221115140820-b4b07a3c4e11
 	github.com/panjf2000/ants/v2 v2.5.0
 	github.com/prometheus/client_golang v1.13.0
 	github.com/spf13/pflag v1.0.5
@@ -25,13 +25,18 @@ require (
 )
 
 require (
+	github.com/TrueCloudLab/frostfs-contract v0.0.0-20221213081248-6c805c1b4e42 // indirect
+	github.com/TrueCloudLab/frostfs-crypto v0.5.0
+	github.com/TrueCloudLab/hrw v1.1.0 // indirect
+	github.com/TrueCloudLab/rfc6979 v0.3.0 // indirect
+	github.com/TrueCloudLab/tzhash v1.7.0 // indirect
 	github.com/antlr/antlr4/runtime/Go/antlr v1.4.10 // indirect
 	//github.com/aws/aws-sdk-go-v2 v1.16.7 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/btcsuite/btcd v0.22.0-beta // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -48,19 +53,14 @@ require (
 	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/nspcc-dev/go-ordered-json v0.0.0-20220111165707-25110be27d22 // indirect
-	github.com/nspcc-dev/hrw v1.0.9 // indirect
 	github.com/nspcc-dev/neo-go/pkg/interop v0.0.0-20220927123257-24c107e3a262 // indirect
-	github.com/nspcc-dev/neofs-contract v0.16.0 // indirect
-	github.com/nspcc-dev/neofs-crypto v0.4.0
 	github.com/nspcc-dev/rfc6979 v0.2.0 // indirect
-	github.com/nspcc-dev/tzhash v1.6.1 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
-	github.com/russross/blackfriday/v2 v2.0.1 // indirect
-	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect

@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api"
-	"github.com/nspcc-dev/neofs-s3-gw/api/data"
-	"github.com/nspcc-dev/neofs-s3-gw/api/layer/encryption"
-	"github.com/nspcc-dev/neofs-s3-gw/creds/accessbox"
-	"github.com/nspcc-dev/neofs-sdk-go/object"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/layer/encryption"
+	"github.com/TrueCloudLab/frostfs-s3-gw/creds/accessbox"
+	"github.com/TrueCloudLab/frostfs-sdk-go/object"
 )
 
 type (

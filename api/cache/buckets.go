@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
 	"github.com/bluele/gcache"
-	"github.com/nspcc-dev/neofs-s3-gw/api/data"
 	"go.uber.org/zap"
 )
 

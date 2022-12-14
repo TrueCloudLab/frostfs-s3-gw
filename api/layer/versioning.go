@@ -4,7 +4,7 @@ import (
 	"context"
 	"sort"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api/data"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
 )
 
 func (n *layer) ListObjectVersions(ctx context.Context, p *ListObjectVersionsParams) (*ListObjectVersionsInfo, error) {

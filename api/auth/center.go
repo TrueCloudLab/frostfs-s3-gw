@@ -14,14 +14,14 @@ import (
 	"strings"
 	"time"
 
+	v4 "github.com/TrueCloudLab/frostfs-s3-gw/api/auth/signer/v4"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/cache"
+	apiErrors "github.com/TrueCloudLab/frostfs-s3-gw/api/errors"
+	"github.com/TrueCloudLab/frostfs-s3-gw/creds/accessbox"
+	"github.com/TrueCloudLab/frostfs-s3-gw/creds/tokens"
+	oid "github.com/TrueCloudLab/frostfs-sdk-go/object/id"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/nspcc-dev/neo-go/pkg/crypto/keys"
-	v4 "github.com/nspcc-dev/neofs-s3-gw/api/auth/signer/v4"
-	"github.com/nspcc-dev/neofs-s3-gw/api/cache"
-	apiErrors "github.com/nspcc-dev/neofs-s3-gw/api/errors"
-	"github.com/nspcc-dev/neofs-s3-gw/creds/accessbox"
-	"github.com/nspcc-dev/neofs-s3-gw/creds/tokens"
-	oid "github.com/nspcc-dev/neofs-sdk-go/object/id"
 )
 
 // authorizationFieldRegexp -- is regexp for credentials with Base58 encoded cid and oid and '0' (zero) as delimiter.

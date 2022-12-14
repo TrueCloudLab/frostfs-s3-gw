@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api/data"
-	oid "github.com/nspcc-dev/neofs-sdk-go/object/id"
-	objecttest "github.com/nspcc-dev/neofs-sdk-go/object/test"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
+	oid "github.com/TrueCloudLab/frostfs-sdk-go/object/id"
+	objecttest "github.com/TrueCloudLab/frostfs-sdk-go/object/test"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	oid "github.com/TrueCloudLab/frostfs-sdk-go/object/id"
 	"github.com/bluele/gcache"
-	oid "github.com/nspcc-dev/neofs-sdk-go/object/id"
 	"go.uber.org/zap"
 )
 

@@ -7,8 +7,8 @@ import (
 	errorsStd "errors"
 	"fmt"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api"
-	"github.com/nspcc-dev/neofs-s3-gw/api/data"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
 	"go.uber.org/zap"
 )
 

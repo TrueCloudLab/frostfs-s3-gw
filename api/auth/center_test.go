@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api/errors"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/errors"
 	"github.com/stretchr/testify/require"
 )
 

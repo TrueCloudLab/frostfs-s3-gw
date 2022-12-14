@@ -3,7 +3,7 @@ package authmate
 import (
 	"testing"
 
-	"github.com/nspcc-dev/neofs-sdk-go/session"
+	"github.com/TrueCloudLab/frostfs-sdk-go/session"
 	"github.com/stretchr/testify/require"
 )
 
