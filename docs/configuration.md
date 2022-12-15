@@ -19,20 +19,20 @@ basic configuration can be completed with CLI parameters only.
     3. [Binding and TLS](#listening-on-address-and-TLS)
     4. [RPC endpoint and resolving of bucket names](#rpc-endpoint-and-resolving-of-bucket-names)
     5. [Processing of requests](#processing-of-requests)
-    6. [Connection to NeoFS](#connection-to-NeoFS)
+    6. [Connection to FrostFS](#connection-to-FrostFS)
     7. [Monitoring and metrics](#monitoring-and-metrics)
 2. [YAML file and environment variables](#yaml-file-and-environment-variables)
-    1. [Configuration file](#neofs-s3-gateway-configuration-file)
+    1. [Configuration file](#frostfs-s3-gateway-configuration-file)
 
 ## CLI parameters
 
 ### Nodes and weights
 
-You can specify multiple `-p` options to add more NeoFS nodes; this will make
+You can specify multiple `-p` options to add more FrostFS nodes; this will make
 a gateway spread requests equally among them (using weight 1 for every node):
 
 ```shell
-$ neofs-s3-gw -p 192.168.130.72:8080 -p 192.168.130.71:8080
+$ frostfs-s3-gw -p 192.168.130.72:8080 -p 192.168.130.71:8080
 ```
 
 If you want some specific load distribution proportions, use weights and priorities, they
@@ -58,7 +58,7 @@ Example to bind to `192.168.130.130:443` and serve TLS there (keys and nodes are
 omitted):
 
 ```shell
-$ neofs-s3-gw --listen_address 192.168.130.130:443 \
+$ frostfs-s3-gw --listen_address 192.168.130.130:443 \
   --tls.key_file=key.pem --tls.cert_file=cert.pem
 ```
 
@@ -70,7 +70,7 @@ To set RPC endpoint specify a value of parameter `-r` or `--rpc_endpoint`. The p
 parameter's `--resolve_order` value contains `nns`.
 
 ```shell
-$ neofs-s3-gw --rpc_endpoint http://morph-chain.neofs.devenv:30333/ --resolve_order nns,dns
+$ frostfs-s3-gw --rpc_endpoint http://morph-chain.frostfs.devenv:30333/ --resolve_order nns,dns
 ```
 
 ### Processing of requests
@@ -80,18 +80,18 @@ Maximum number of clients whose requests can be handled by the gateway can be sp
 `--max_clients_deadline` defines deadline after which the gate sends error `RequestTimeout` to a client.
 
 ```shell
-$ neofs-s3-gw --max_clients_count 150 --max_clients_deadline 1m
+$ frostfs-s3-gw --max_clients_count 150 --max_clients_deadline 1m
 ```
 
-### Connection to NeoFS
+### Connection to FrostFS
 
-Timeout to connect to NeoFS nodes can be set with `--connect_timeout`
+Timeout to connect to FrostFS nodes can be set with `--connect_timeout`
 and timeout to check node health during rebalance`--healthcheck_timeout`.
 
 Also, interval to check node health can be specified by `--rebalance_interval` value.
 
 ```shell
-$ neofs-s3-gw --healthcheck_timeout 15s --connect_timeout 1m --rebalance_interval 1h
+$ frostfs-s3-gw --healthcheck_timeout 15s --connect_timeout 1m --rebalance_interval 1h
 ```
 
 ### Monitoring and metrics
@@ -107,7 +107,7 @@ Examples of environment variables: [env-example](/config/config.env).
 A path to a configuration file can be specified with `--config` parameter:
 
 ```shell
-$ neofs-s3-gw --config your-config.yaml
+$ frostfs-s3-gw --config your-config.yaml
 ```
 
 ### Reload on SIGHUP
@@ -124,12 +124,12 @@ $ kill -s SIGHUP <app_pid>
 Example:
 
 ```shell
-$ ./bin/neofs-s3-gw --config config.yaml  &> s3.log &
+$ ./bin/frostfs-s3-gw --config config.yaml  &> s3.log &
 [1] 998346
 
 $ cat s3.log
 # ...
-2022-09-30T17:38:22.338+0300    info    s3-gw/app.go:371        application started     {"name": "neofs-s3-gw", "version": "v0.24.0"}
+2022-09-30T17:38:22.338+0300    info    s3-gw/app.go:371        application started     {"name": "frostfs-s3-gw", "version": "v0.24.0"}
 # ...
 
 $ kill -s SIGHUP 998346
@@ -139,9 +139,9 @@ $ cat s3.log
 2022-09-30T17:38:40.909+0300    info    s3-gw/app.go:491        SIGHUP config reload completed
 ```
 
-### NeoFS S3 Gateway configuration file
+### FrostFS S3 Gateway configuration file
 
-This section contains detailed NeoFS S3 Gateway configuration file description
+This section contains detailed FrostFS S3 Gateway configuration file description
 including default config values and some tips to set up configurable values.
 
 There are some custom types used for brevity:
@@ -165,16 +165,16 @@ There are some custom types used for brevity:
 | `cors`             | [CORS configuration](#cors-section)                         |
 | `pprof`            | [Pprof configuration](#pprof-section)                       |
 | `prometheus`       | [Prometheus configuration](#prometheus-section)             |
-| `neofs`            | [Parameters of requests to NeoFS](#neofs-section)           |
+| `neofs`            | [Parameters of requests to FrostFS](#neofs-section)         |
 
 ### General section
 
 ```yaml
 listen_domains:
-   - s3dev.neofs.devenv
-   - s3dev2.neofs.devenv
+   - s3dev.frostfs.devenv
+   - s3dev2.frostfs.devenv
 
-rpc_endpoint: http://morph-chain.neofs.devenv:30333
+rpc_endpoint: http://morph-chain.frostfs.devenv:30333
 resolve_order:
   - nns
   - dns
@@ -226,23 +226,23 @@ wallet:
 
 ```yaml
 # Nodes configuration
-# This configuration makes the gateway use the first node (node1.neofs:8080)
-# while it's healthy. Otherwise, gateway uses the second node (node2.neofs:8080)
-# for 10% of requests and the third node (node3.neofs:8080) for 90% of requests.
+# This configuration makes the gateway use the first node (node1.frostfs:8080)
+# while it's healthy. Otherwise, gateway uses the second node (node2.frostfs:8080)
+# for 10% of requests and the third node (node3.frostfs:8080) for 90% of requests.
 # Until nodes with the same priority level are healthy
 # nodes with other priority are not used.
 # The lower the value, the higher the priority.
 peers:
   0:
-    address: node1.neofs:8080
+    address: node1.frostfs:8080
     priority: 1
     weight: 1
   1:
-    address: node2.neofs:8080
+    address: node2.frostfs:8080
     priority: 2
     weight: 0.1
   2:
-    address: node3.neofs:8080
+    address: node3.frostfs:8080
     priority: 2
     weight: 0.9
 ```
@@ -262,10 +262,10 @@ placement_policy:
   region_mapping: /path/to/mapping/rules.json
 ```
 
-| Parameter        | Type     | SIGHUP reload | Default value | Description                                                                                                                                                                                                       |
-|------------------|----------|---------------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `default`        | `string` | yes           | `REP 3`       | Default policy of placing containers in NeoFS. If a user sends a request `CreateBucket` and doesn't define policy for placing of a container in NeoFS, the S3 Gateway will put the container with default policy. |
-| `region_mapping` | `string` | yes           |               | Path to file that maps aws `LocationContraint` values to NeoFS placement policy. The similar to `--container-policy` flag in `neofs-s3-authmate` util.                                                            |
+| Parameter        | Type     | SIGHUP reload | Default value | Description                                                                                                                                                                                                           |
+|------------------|----------|---------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `default`        | `string` | yes           | `REP 3`       | Default policy of placing containers in FrostFS. If a user sends a request `CreateBucket` and doesn't define policy for placing of a container in FrostFS, the S3 Gateway will put the container with default policy. |
+| `region_mapping` | `string` | yes           |               | Path to file that maps aws `LocationContraint` values to FrostFS placement policy. The similar to `--container-policy` flag in `frostfs-s3-authmate` util.                                                            |
 
 File for `region_mapping` must contain something like this:
 
@@ -320,7 +320,7 @@ logger:
 
 ```yaml
 tree:
-  service: s01.neofs.devenv:8080
+  service: s01.frostfs.devenv:8080
 ```
 
 | Parameter | Type     | Default value | Description                                                                                                |
@@ -356,7 +356,7 @@ cache:
 
 | Parameter       | Type                              | Default value                     | Description                                                                            |
 |-----------------|-----------------------------------|-----------------------------------|----------------------------------------------------------------------------------------|
-| `objects`       | [Cache config](#cache-subsection) | `lifetime: 5m`<br>`size: 1000000` | Cache for objects (NeoFS headers).                                                     |
+| `objects`       | [Cache config](#cache-subsection) | `lifetime: 5m`<br>`size: 1000000` | Cache for objects (FrostFS headers).                                                   |
 | `list`          | [Cache config](#cache-subsection) | `lifetime: 60s`<br>`size: 100000` | Cache which keeps lists of objects in buckets.                                         |
 | `names`         | [Cache config](#cache-subsection) | `lifetime: 60s`<br>`size: 10000`  | Cache which contains mapping of nice name to object addresses.                         |
 | `buckets`       | [Cache config](#cache-subsection) | `lifetime: 60s`<br>`size: 1000`   | Cache which contains mapping of bucket name to bucket info.                            |
@@ -449,14 +449,14 @@ prometheus:
 
 # `neofs` section
 
-Contains parameters of requests to NeoFS. 
+Contains parameters of requests to FrostFS. 
 This value can be overridden with `X-Amz-Meta-Neofs-Copies-Number` header for `PutObject`, `CopyObject`, `CreateMultipartUpload`.
 
 ```yaml
-neofs:
+frostfs:
   set_copies_number: 0
 ```
 
-| Parameter           | Type     | Default value | Description                                                                                                                                                               |
-|---------------------|----------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `set_copies_number` | `uint32` | `0`           | Number of the object copies to consider PUT to NeoFS successful. <br/>Default value `0` means that object will be processed according to the container's placement policy |
+| Parameter           | Type     | Default value | Description                                                                                                                                                                 |
+|---------------------|----------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `set_copies_number` | `uint32` | `0`           | Number of the object copies to consider PUT to FrostFS successful. <br/>Default value `0` means that object will be processed according to the container's placement policy |

@@ -1,18 +1,18 @@
-# NeoFS S3 AuthMate
+# FrostFS S3 AuthMate
 
 Authmate is a tool to create gateway AWS credentials. AWS users
-are authenticated with access key IDs and secrets, while NeoFS users are
+are authenticated with access key IDs and secrets, while FrostFS users are
 authenticated with key pairs. To complicate things further, we have S3 gateway
 that usually acts on behalf of some user, but the user doesn't necessarily want to
 give their keys to the gateway.
 
-To solve this, we use NeoFS bearer tokens that are signed by the owner (NeoFS
-"user") and that can implement any kind of policy for NeoFS requests allowed
+To solve this, we use FrostFS bearer tokens that are signed by the owner (FrostFS
+"user") and that can implement any kind of policy for FrostFS requests allowed
 to use this token. However, tokens can't be used as AWS credentials directly. Thus,
-they're stored on NeoFS as regular objects, and an access key ID is just an
+they're stored on FrostFS as regular objects, and an access key ID is just an
 address of this object while a secret is generated randomly.
 
-Tokens are not stored on NeoFS in plaintext, they're encrypted with a set of
+Tokens are not stored on FrostFS in plaintext, they're encrypted with a set of
 gateway keys. So, in order for a gateway to be able to successfully extract bearer
 token, the object needs to be stored in a container available for the gateway
 to read, and it needs to be encrypted with this gateway's key (among others
@@ -83,7 +83,7 @@ NhLQpDnerpviUWDF77j5qyjFgavCmasJ4p (simple signature contract):
 ## Issuance of a secret
 
 To issue a secret means to create Bearer and, optionally, Session tokens and
-put them as an object into a container on the NeoFS network.
+put them as an object into a container on the FrostFS network.
 
 ### CLI parameters
 
@@ -91,7 +91,7 @@ put them as an object into a container on the NeoFS network.
 * `--wallet` is a path to a wallet `.json` file. You can provide a passphrase to decrypt
 a wallet via environment variable `AUTHMATE_WALLET_PASSPHRASE`, or you will be asked to enter a passphrase 
 interactively. You can also specify an account address to use from a wallet using the `--address` parameter.
-* `--peer` is an address of a NeoFS peer to connect to
+* `--peer` is an address of a FrostFS peer to connect to
 * `--gate-public-key` is a public `secp256r1` 33-byte short key of a gate (use flags repeatedly for multiple gates). The tokens are encrypted
 by a set of gateway keys, so you need to pass them as well.
 
@@ -105,7 +105,7 @@ You can issue a secret using the parameters above only. The tool will
 
 E.g.:
 ```shell
-$ neofs-s3-authmate issue-secret --wallet wallet.json \
+$ frostfs-s3-authmate issue-secret --wallet wallet.json \
  --peer 192.168.130.71:8080 \
  --gate-public-key 0313b1ac3a8076e155a7e797b24f0b650cccad5941ea59d7cfd51a024a8b2a06bf\
  --gate-public-key 0317585fa8274f7afdf1fc5f2a2e7bece549d5175c4e5182e37924f30229aef967
@@ -122,7 +122,7 @@ $ neofs-s3-authmate issue-secret --wallet wallet.json \
 
 `access_key_id` and `secret_access_key` are AWS credentials that you can use with any S3 client.
 
-`access_key_id` consists of Base58 encoded containerID(cid) and objectID(oid) stored on the NeoFS network and containing
+`access_key_id` consists of Base58 encoded containerID(cid) and objectID(oid) stored on the FrostFS network and containing
 the secret. Format of `access_key_id`: `%cid0%oid`, where 0(zero) is a delimiter.
 
 **Optional parameters:**
@@ -141,7 +141,7 @@ Creation of bearer tokens is mandatory.
 
 Rules for a bearer token can be set via parameter `--bearer-rules` (json-string and file path allowed):
 ```shell
-$ neofs-s3-authmate issue-secret --wallet wallet.json \
+$ frostfs-s3-authmate issue-secret --wallet wallet.json \
 --peer 192.168.130.71:8080 \
 --gate-public-key 0313b1ac3a8076e155a7e797b24f0b650cccad5941ea59d7cfd51a024a8b2a06bf \
 --bearer-rules bearer-rules.json  
@@ -195,7 +195,7 @@ If bearer rules are not set, a token will be auto-generated with a value:
 With a session token, there are 3 options: 
 1. append `--session-tokens` parameter with your custom rules in json format (as a string or file path). E.g.:
 ```shell
-$ neofs-s3-authmate issue-secret --wallet wallet.json \
+$ frostfs-s3-authmate issue-secret --wallet wallet.json \
 --peer 192.168.130.71:8080 \
 --gate-public-key 0313b1ac3a8076e155a7e797b24f0b650cccad5941ea59d7cfd51a024a8b2a06bf \
 --session-tokens session.json
@@ -224,7 +224,7 @@ If `containerID` is `null` or omitted, then session token rule will be applied
 to all containers. Otherwise, specify `containerID` value in human-redabale
 format (base58 encoded string).
 
-> **_NB!_** To create buckets in NeoFS it's necessary to have session tokens with `PUT` and `SETEACL` permissions, that's why 
+> **_NB!_** To create buckets in FrostFS it's necessary to have session tokens with `PUT` and `SETEACL` permissions, that's why 
 the authmate creates a `SETEACL` session token automatically in case when a user specified the token rule with `PUT` and 
 forgot about the rule with `SETEACL`.
 
@@ -235,7 +235,7 @@ in example above)
 ### Containers policy
 
 Rules for mapping of `LocationConstraint` ([aws spec](https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html#API_CreateBucket_RequestBody)) 
-to `PlacementPolicy` ([neofs spec](https://github.com/nspcc-dev/neofs-spec/blob/master/01-arch/02-policy.md)) 
+to `PlacementPolicy` ([frostfs spec](https://github.com/TrueCloudLab/frostfs-spec/blob/master/01-arch/02-policy.md)) 
 can be set via parameter `--container-policy` (json-string and file path allowed):
 ```json
 {
@@ -248,12 +248,12 @@ can be set via parameter `--container-policy` (json-string and file path allowed
 ## Obtainment of a secret access key
 
 You can get a secret access key associated with an access key ID by obtaining a
-secret stored on the NeoFS network. Here is an example of providing one password (for `wallet.json`) via env variable 
+secret stored on the FrostFS network. Here is an example of providing one password (for `wallet.json`) via env variable 
 and the other (for `gate-wallet.json`) interactively:
 
 ```shell
 $ AUTHMATE_WALLET_PASSPHRASE=some-pwd \
-neofs-s3-authmate obtain-secret --wallet wallet.json \
+frostfs-s3-authmate obtain-secret --wallet wallet.json \
 --peer 192.168.130.71:8080 \
 --gate-wallet gate-wallet.json \
 --access-key-id 5g933dyLEkXbbAspouhPPTiyLZRg4axBW1axSPD87eVT0AiXsH4AjYy1iTJ4C1WExzjBrSobJsQFWEyKLREe5sQYM
@@ -272,7 +272,7 @@ using AWS credentials from `~/.aws/credentials` (you can specify profile using t
 with the following command:
 
 ```shell
-$ neofs-s3-authmate generate-presigned-url --endpoint http://localhost:8084 \
+$ frostfs-s3-authmate generate-presigned-url --endpoint http://localhost:8084 \
   --method get --bucket presigned --object obj --lifetime 30s
   
 {
@@ -283,7 +283,7 @@ $ neofs-s3-authmate generate-presigned-url --endpoint http://localhost:8084 \
 You can also provide credential explicitly:
 
 ```shell
-$ neofs-s3-authmate generate-presigned-url --endpoint http://localhost:8084 \
+$ frostfs-s3-authmate generate-presigned-url --endpoint http://localhost:8084 \
   --method put --bucket presigned --object obj --lifetime 12h \
   --region ru --aws-secret-access-key c2d65ef2980f03f4f495bdebedeeae760496697880d61d106bb9a4e5cd2e0607 \
   --aws-access-key-id ETaA2CadPcA7bAkLsML2PbTudXY8uRt2PDjCCwkvRv9s0FDCxWDXYc1SA1vKv8KbyCNsLY2AmAjJ92Vz5rgvsFCy
