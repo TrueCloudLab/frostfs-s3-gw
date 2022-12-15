@@ -5,5 +5,5 @@ var (
 	Version = "dev"
 
 	// Server contains server identification string.
-	Server = "NeoFS-S3-GW/" + Version
+	Server = "FrostFS-S3-GW/" + Version
 )

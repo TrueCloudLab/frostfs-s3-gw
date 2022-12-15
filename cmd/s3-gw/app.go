@@ -400,7 +400,7 @@ func remove(list []string, element string) []string {
 // about the stop to the log.
 func (a *App) Wait() {
 	a.log.Info("application started",
-		zap.String("name", "neofs-s3-gw"),
+		zap.String("name", "frostfs-s3-gw"),
 		zap.String("version", version.Version),
 	)
 

@@ -8,12 +8,12 @@ LINT_VERSION ?= 1.49.0
 BINDIR = bin
 
 # Binaries to build
-CMDS = $(addprefix neofs-, $(notdir $(wildcard cmd/*)))
+CMDS = $(addprefix frostfs-, $(notdir $(wildcard cmd/*)))
 BINS = $(addprefix $(BINDIR)/, $(CMDS))
 
 # Variables for docker
 REPO_BASENAME = $(shell basename `go list -m`)
-HUB_IMAGE ?= "nspccdev/$(REPO_BASENAME)"
+HUB_IMAGE ?= "truecloudlab/$(REPO_BASENAME)"
 HUB_TAG ?= "$(shell echo ${VERSION} | sed 's/^v//')"
 
 .PHONY: all $(BINS) $(BINDIR) dep docker/ test cover format image image-push dirty-image lint docker/lint version clean protoc
@@ -33,7 +33,7 @@ $(BINS): sync-tree $(BINDIR) dep
 	CGO_ENABLED=0 \
 	go build -v -trimpath \
 	-ldflags "-X $(REPO)/internal/version.Version=$(VERSION)" \
-	-o $@ ./cmd/$(subst neofs-,,$(notdir $@))
+	-o $@ ./cmd/$(subst frostfs-,,$(notdir $@))
 
 $(BINDIR):
 	@echo "⇒ Ensure dir: $@"
@@ -80,7 +80,7 @@ format:
 
 # Build clean Docker image
 image:
-	@echo "⇒ Build NeoFS S3 Gateway docker image "
+	@echo "⇒ Build FrostFS S3 Gateway docker image "
 	@docker build \
 		--build-arg REPO=$(REPO) \
 		--build-arg VERSION=$(VERSION) \
@@ -95,7 +95,7 @@ image-push:
 
 # Build dirty Docker image
 dirty-image:
-	@echo "⇒ Build NeoFS S3 Gateway dirty docker image "
+	@echo "⇒ Build FrostFS S3 Gateway dirty docker image "
 	@docker build \
 		--build-arg REPO=$(REPO) \
 		--build-arg VERSION=$(VERSION) \
@@ -135,7 +135,7 @@ protoc:
 
 # Package for Debian
 debpackage:
-	dch --package neofs-s3-gw \
+	dch --package frostfs-s3-gw \
 			--controlmaint \
 			--newversion $(PKG_VERSION) \
 			--distribution $(OS_RELEASE) \
