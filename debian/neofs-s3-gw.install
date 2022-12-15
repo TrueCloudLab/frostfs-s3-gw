@@ -1,4 +1,0 @@
-config/config.yaml etc/neofs/s3
-config/rules.json var/lib/neofs/s3
-bin/neofs-s3-gw usr/bin
-bin/neofs-s3-authmate usr/bin

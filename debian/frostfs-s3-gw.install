@@ -1,0 +1,4 @@
+config/config.yaml etc/frostfs/s3
+config/rules.json var/lib/frostfs/s3
+bin/frostfs-s3-gw usr/bin
+bin/frostfs-s3-authmate usr/bin
