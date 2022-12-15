@@ -110,8 +110,8 @@ func prepare() (context.Context, *zap.Logger) {
 
 func main() {
 	app := &cli.App{
-		Name:     "NeoFS S3 Authmate",
-		Usage:    "Helps manage delegated access via gates to data stored in NeoFS network",
+		Name:     "FrostFS S3 Authmate",
+		Usage:    "Helps manage delegated access via gates to data stored in FrostFS network",
 		Version:  version.Version,
 		Flags:    appFlags(),
 		Commands: appCommands(),

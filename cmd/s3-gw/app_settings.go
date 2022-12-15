@@ -277,7 +277,7 @@ func newSettings() *viper.Viper {
 
 	switch {
 	case help != nil && *help:
-		fmt.Printf("NeoFS S3 gateway %s\n", version.Version)
+		fmt.Printf("FrostFS S3 gateway %s\n", version.Version)
 		flags.PrintDefaults()
 
 		fmt.Println()
@@ -309,7 +309,7 @@ func newSettings() *viper.Viper {
 
 		os.Exit(0)
 	case versionFlag != nil && *versionFlag:
-		fmt.Printf("NeoFS S3 Gateway\nVersion: %s\nGoVersion: %s\n", version.Version, runtime.Version())
+		fmt.Printf("FrostFS S3 Gateway\nVersion: %s\nGoVersion: %s\n", version.Version, runtime.Version())
 		os.Exit(0)
 	}
 

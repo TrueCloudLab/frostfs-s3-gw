@@ -22,7 +22,7 @@ version      Show current version
 ```
 
 Or you can also use a [Docker
-image](https://hub.docker.com/r/nspccdev/frostfs-s3-gw) provided for released
+image](https://hub.docker.com/r/truecloudlab/frostfs-s3-gw) provided for released
 (and occasionally unreleased) versions of gateway (`:latest` points to the
 latest stable release).
 

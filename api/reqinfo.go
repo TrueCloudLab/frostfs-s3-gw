@@ -45,7 +45,7 @@ type (
 // Key used for Get/SetReqInfo.
 type contextKeyType string
 
-const ctxRequestInfo = contextKeyType("NeoFS-S3-GW")
+const ctxRequestInfo = contextKeyType("FrostFS-S3-GW")
 
 var (
 	// De-facto standard header keys.
