@@ -1,5 +1,5 @@
 #!/bin/sh
-# prerm script for neofs-s3-gw
+# prerm script for frostfs-s3-gw
 #
 # see: dh_installdeb(1)
 

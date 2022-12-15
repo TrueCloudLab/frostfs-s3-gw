@@ -1,0 +1,16 @@
+[Unit]
+Description=FrostFS S3 Gateway
+Requires=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/frostfs-s3-gw --config /etc/frostfs/s3/config.yaml
+User=frostfs-s3
+Group=frostfs-s3
+WorkingDirectory=/var/lib/frostfs/s3
+Restart=always
+RestartSec=5
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

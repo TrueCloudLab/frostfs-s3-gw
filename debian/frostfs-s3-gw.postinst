@@ -1,5 +1,5 @@
 #!/bin/sh
-# postinst script for neofs-s3-gw
+# postinst script for frostfs-s3-gw
 #
 # see: dh_installdeb(1)
 
@@ -21,17 +21,17 @@ set -e
 case "$1" in
     configure)
         USERNAME=s3
-        id -u neofs-$USERNAME >/dev/null 2>&1 || useradd -s /usr/sbin/nologin -d /var/lib/neofs/s3 --system -M -U -c "NeoFS S3 gateway" neofs-$USERNAME
-        if ! dpkg-statoverride --list /etc/neofs/$USERNAME >/dev/null; then
-            chown -f -R root:neofs-$USERNAME /etc/neofs/$USERNAME
-            chown -f root:neofs-$USERNAME /etc/neofs/$USERNAME/config.yaml || true
-            chmod -f 0750 /etc/neofs/$USERNAME
-            chmod -f 0640 /etc/neofs/$USERNAME/config.yaml || true
+        id -u frostfs-$USERNAME >/dev/null 2>&1 || useradd -s /usr/sbin/nologin -d /var/lib/frostfs/s3 --system -M -U -c "FrostFS S3 gateway" frostfs-$USERNAME
+        if ! dpkg-statoverride --list /etc/frostfs/$USERNAME >/dev/null; then
+            chown -f -R root:frostfs-$USERNAME /etc/frostfs/$USERNAME
+            chown -f root:frostfs-$USERNAME /etc/frostfs/$USERNAME/config.yaml || true
+            chmod -f 0750 /etc/frostfs/$USERNAME
+            chmod -f 0640 /etc/frostfs/$USERNAME/config.yaml || true
         fi
-        USERDIR=$(getent passwd "neofs-$USERNAME" | cut -d: -f6)
-        if ! dpkg-statoverride --list neofs-$USERDIR >/dev/null; then
-            chown -f neofs-$USERNAME: $USERDIR
-            chown -f neofs-$USERNAME: $USERDIR/rules.json
+        USERDIR=$(getent passwd "frostfs-$USERNAME" | cut -d: -f6)
+        if ! dpkg-statoverride --list frostfs-$USERDIR >/dev/null; then
+            chown -f frostfs-$USERNAME: $USERDIR
+            chown -f frostfs-$USERNAME: $USERDIR/rules.json
         fi
     ;;
 

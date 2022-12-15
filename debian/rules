@@ -2,7 +2,7 @@
 
 # Do not try to strip Go binaries
 export DEB_BUILD_OPTIONS := nostrip
-SERVICE = neofs-s3-gw
+SERVICE = frostfs-s3-gw
 
 %:
 	dh $@

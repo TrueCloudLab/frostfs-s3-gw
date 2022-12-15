@@ -1,11 +1,13 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: neofs-s3-gw
-Upstream-Contact: tech@nspcc.ru
-Source: https://github.com/nspcc-dev/neofs-s3-gw
+Upstream-Name: frostfs-s3-gw
+Upstream-Contact: tech@frostfs.info
+Source: https://github.com/TrueCloudLab/frostfs-s3-gw
 
 Files: *
-Copyright: 2018-2022 NeoSPCC (@nspcc-dev), contributors of neofs-s3-gw project 
+Copyright: 2018-2022 NeoSPCC (@nspcc-dev), contributors of neofs-s3-gw project
            (https://github.com/nspcc-dev/neofs-s3-gw/blob/master/CREDITS.md)
+           2022 True Cloud Lab (@TrueCloudLab), contributors of frostfs-s3-gw project
+           (https://github.com/TrueCloudLab/frostfs-s3-gw/blob/master/CREDITS.md)
 
 
 License: AGPL-3.0-only

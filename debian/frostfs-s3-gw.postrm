@@ -1,5 +1,5 @@
 #!/bin/sh
-# postrm script for neofs-s3-gw
+# postrm script for frostfs-s3-gw
 #
 # see: dh_installdeb(1)
 
@@ -21,7 +21,7 @@ set -e
 
 case "$1" in
     purge)
-        rm -rf /var/lib/neofs/s3
+        rm -rf /var/lib/frostfs/s3
     ;;
 
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
