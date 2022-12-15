@@ -6,7 +6,7 @@
 
 To configure basic settings that the AWS CLI uses to interact with the Gateway, follow the steps below:
 
-1. issue a secret with neofs-s3-authmate tool (see [NeoFS S3 Authmate](./authmate.md))
+1. issue a secret with frostfs-s3-authmate tool (see [FrostFS S3 Authmate](./authmate.md))
 2. execute the command
 ```
 $ aws configure
@@ -28,7 +28,7 @@ Default output format [none]: json
 
 #### Obtainment of a list of buckets 
 
-To view the list of the buckets in the NeoFS node, to which the gateway is connected, enter the following command:
+To view the list of the buckets in the FrostFS node, to which the gateway is connected, enter the following command:
 ```
 $ aws s3 ls 
 ```
@@ -72,15 +72,15 @@ $ aws s3api list-objects --bucket %BUCKET_NAME
 
 #### Upload of a file
 
-To upload a file into a bucket in the NeoFS network, run the following command:
+To upload a file into a bucket in the FrostFS network, run the following command:
 ```
 $ aws s3api put-object --bucket %BUCKET_NAME --key %OBJECT_KEY --body  %FILEPATH
 ```
-where %OBJECT_KEY is the filepath of an object in NeoFS
+where %OBJECT_KEY is the filepath of an object in FrostFS
 
 #### Upload of a dir
 
-To upload a dir into a bucket in the NeoFS network, run the following command:
+To upload a dir into a bucket in the FrostFS network, run the following command:
 
 ```
 $ aws s3 sync %DIRPATH s3://%BUCKET_NAME 
@@ -88,7 +88,7 @@ $ aws s3 sync %DIRPATH s3://%BUCKET_NAME
 
 #### Download of a file
 
-To download a file from a bucket in the NeoFS Network, execute:
+To download a file from a bucket in the FrostFS Network, execute:
 ```
 $ aws s3api get-object --bucket  %BUCKET_NAME --key %OBJECT_KEY %OUTFILE
 ```

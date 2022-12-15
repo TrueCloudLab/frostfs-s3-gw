@@ -1,7 +1,7 @@
 # S3 compatibility test results
 
-NeoFS Node: v0.30.0
-NeoFS S3 Gateway: v0.22.0-10-g87f6681
+FrostFS Node: v0.30.0
+FrostFS S3 Gateway: v0.22.0-10-g87f6681
 
 To update this file using tests result, run:
 
