@@ -4,26 +4,22 @@ This document outlines major changes between releases.
 
 ## [Unreleased]
 
-### Fixed
-- Empty bucket policy (#740) 
-- Big object removal (#749)
+## [0.26.0] - 2022-12-28
 
 ### Added
 - Use client time as `now` in some requests (#726)
-- Timeout for individual operations in streaming RPC (#740)
 - Reload policies on SIGHUP (#747)
 - Authmate flags for pool timeouts (#760)
-
-### Added
 - Multiple server listeners (#742)
 
 ### Changed
 - Placement policy configuration (#568)
+- Improved debug logging of CID and OID values (#754)
 
 ### Removed
 - Deprecated linters (#755)
 
-### Updating from v0.25.0
+### Updating from v0.25.1
 New config parameters were added. And old one `defaul_policy` were changed.
 ```yaml
 placement_policy:
@@ -43,6 +39,17 @@ If you configure application using `.yaml` file change:
 * `listen_address` -> `server.0.address`
 * `tls.cert_file` -> `server.0.tls.cert_file` (and set `server.0.tls.enabled: true`)
 * `tls.key_file` -> `server.0.tls.key_file` (and set `server.0.tls.enabled: true`)
+
+## [0.25.1] - 2022-10-30
+
+### Fixed
+- Empty bucket policy (#740)
+- Big object removal (#749)
+- Checksum panic (#741)
+
+### Added
+- Debian packaging (#737)
+- Timeout for individual operations in streaming RPC (#750)
 
 ## [0.25.0] - 2022-10-31
 
