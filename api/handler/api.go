@@ -38,7 +38,7 @@ type (
 )
 
 const (
-	// DefaultPolicy is a default policy of placing containers in NeoFS if it's not set at the request.
+	// DefaultPolicy is a default policy of placing containers in FrostFS if it's not set at the request.
 	DefaultPolicy = "REP 3"
 	// DefaultCopiesNumber is a default number of object copies that is enough to consider put successful if it's not set in config.
 	DefaultCopiesNumber uint32 = 0
@@ -50,7 +50,7 @@ var _ api.Handler = (*handler)(nil)
 func New(log *zap.Logger, obj layer.Client, notificator Notificator, cfg *Config) (api.Handler, error) {
 	switch {
 	case obj == nil:
-		return nil, errors.New("empty NeoFS Object Layer")
+		return nil, errors.New("empty FrostFS Object Layer")
 	case log == nil:
 		return nil, errors.New("empty logger")
 	}

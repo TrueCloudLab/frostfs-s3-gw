@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	namespace      = "neofs_s3_gw"
+	namespace      = "frostfs_s3_gw"
 	stateSubsystem = "state"
 	poolSubsystem  = "pool"
 

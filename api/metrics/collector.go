@@ -12,9 +12,9 @@ type stats struct {
 var (
 	versionInfo = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Namespace: "neofs_s3",
+			Namespace: "frostfs_s3",
 			Name:      "version_info",
-			Help:      "Version of current NeoFS S3 Gate instance",
+			Help:      "Version of current FrostFS S3 Gate instance",
 		},
 		[]string{
 			// current version
@@ -23,7 +23,7 @@ var (
 	)
 
 	statsMetrics = &stats{
-		desc: prometheus.NewDesc("neofs_s3_stats", "Statistics exposed by NeoFS S3 Gate instance", nil, nil),
+		desc: prometheus.NewDesc("frostfs_s3_stats", "Statistics exposed by FrostFS S3 Gate instance", nil, nil),
 	}
 )
 
@@ -37,8 +37,8 @@ func collectNetworkMetrics(ch chan<- prometheus.Metric) {
 	// Network Sent/Received Bytes (Outbound)
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
-			prometheus.BuildFQName("neofs_s3", "tx", "bytes_total"),
-			"Total number of bytes sent by current NeoFS S3 Gate instance",
+			prometheus.BuildFQName("frostfs_s3", "tx", "bytes_total"),
+			"Total number of bytes sent by current FrostFS S3 Gate instance",
 			nil, nil),
 		prometheus.CounterValue,
 		float64(httpStatsMetric.getInputBytes()),
@@ -46,8 +46,8 @@ func collectNetworkMetrics(ch chan<- prometheus.Metric) {
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
-			prometheus.BuildFQName("neofs_s3", "rx", "bytes_total"),
-			"Total number of bytes received by current NeoFS S3 Gate instance",
+			prometheus.BuildFQName("frostfs_s3", "rx", "bytes_total"),
+			"Total number of bytes received by current FrostFS S3 Gate instance",
 			nil, nil),
 		prometheus.CounterValue,
 		float64(httpStatsMetric.getOutputBytes()),

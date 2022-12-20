@@ -16,7 +16,7 @@ import (
 	"github.com/TrueCloudLab/frostfs-s3-gw/creds/tokens"
 	"github.com/TrueCloudLab/frostfs-sdk-go/bearer"
 	cid "github.com/TrueCloudLab/frostfs-sdk-go/container/id"
-	neofsecdsa "github.com/TrueCloudLab/frostfs-sdk-go/crypto/ecdsa"
+	frostfsecdsa "github.com/TrueCloudLab/frostfs-sdk-go/crypto/ecdsa"
 	"github.com/TrueCloudLab/frostfs-sdk-go/eacl"
 	"github.com/TrueCloudLab/frostfs-sdk-go/netmap"
 	oid "github.com/TrueCloudLab/frostfs-sdk-go/object/id"
@@ -29,7 +29,7 @@ import (
 
 // PrmContainerCreate groups parameters of containers created by authmate.
 type PrmContainerCreate struct {
-	// NeoFS identifier of the container creator.
+	// FrostFS identifier of the container creator.
 	Owner user.ID
 
 	// Container placement policy.
@@ -39,26 +39,26 @@ type PrmContainerCreate struct {
 	FriendlyName string
 }
 
-// NetworkState represents NeoFS network state which is needed for authmate processing.
+// NetworkState represents FrostFS network state which is needed for authmate processing.
 type NetworkState struct {
-	// Current NeoFS time.
+	// Current FrostFS time.
 	Epoch uint64
 	// Duration of the Morph chain block in ms.
 	BlockDuration int64
-	// Duration of the NeoFS epoch in Morph chain blocks.
+	// Duration of the FrostFS epoch in Morph chain blocks.
 	EpochDuration uint64
 }
 
-// NeoFS represents virtual connection to NeoFS network.
-type NeoFS interface {
-	// NeoFS interface required by credential tool.
-	tokens.NeoFS
+// FrostFS represents virtual connection to FrostFS network.
+type FrostFS interface {
+	// FrostFS interface required by credential tool.
+	tokens.FrostFS
 
-	// ContainerExists checks container presence in NeoFS by identifier.
+	// ContainerExists checks container presence in FrostFS by identifier.
 	// Returns nil if container exists.
 	ContainerExists(context.Context, cid.ID) error
 
-	// CreateContainer creates and saves parameterized container in NeoFS.
+	// CreateContainer creates and saves parameterized container in FrostFS.
 	// It sets 'Timestamp' attribute to the current time.
 	// It returns the ID of the saved container.
 	//
@@ -78,25 +78,25 @@ type NeoFS interface {
 	TimeToEpoch(context.Context, time.Time) (uint64, uint64, error)
 }
 
-// Agent contains client communicating with NeoFS and logger.
+// Agent contains client communicating with FrostFS and logger.
 type Agent struct {
-	neoFS NeoFS
-	log   *zap.Logger
+	frostFS FrostFS
+	log     *zap.Logger
 }
 
 // New creates an object of type Agent that consists of Client and logger.
-func New(log *zap.Logger, neoFS NeoFS) *Agent {
-	return &Agent{log: log, neoFS: neoFS}
+func New(log *zap.Logger, frostFS FrostFS) *Agent {
+	return &Agent{log: log, frostFS: frostFS}
 }
 
 type (
-	// ContainerPolicies contains mapping of aws LocationConstraint to neofs PlacementPolicy.
+	// ContainerPolicies contains mapping of aws LocationConstraint to frostfs PlacementPolicy.
 	ContainerPolicies map[string]string
 
 	// IssueSecretOptions contains options for passing to Agent.IssueSecret method.
 	IssueSecretOptions struct {
 		Container             ContainerOptions
-		NeoFSKey              *keys.PrivateKey
+		FrostFSKey            *keys.PrivateKey
 		GatesPublicKeys       []*keys.PublicKey
 		EACLRules             []byte
 		SessionTokenRules     []byte
@@ -120,7 +120,7 @@ type (
 	}
 )
 
-// lifetimeOptions holds NeoFS epochs, iat -- epoch which the token was issued at, exp -- epoch when the token expires.
+// lifetimeOptions holds FrostFS epochs, iat -- epoch which the token was issued at, exp -- epoch when the token expires.
 type lifetimeOptions struct {
 	Iat uint64
 	Exp uint64
@@ -143,7 +143,7 @@ type (
 
 func (a *Agent) checkContainer(ctx context.Context, opts ContainerOptions, idOwner user.ID) (cid.ID, error) {
 	if !opts.ID.Equals(cid.ID{}) {
-		return opts.ID, a.neoFS.ContainerExists(ctx, opts.ID)
+		return opts.ID, a.frostFS.ContainerExists(ctx, opts.ID)
 	}
 
 	var prm PrmContainerCreate
@@ -156,9 +156,9 @@ func (a *Agent) checkContainer(ctx context.Context, opts ContainerOptions, idOwn
 	prm.Owner = idOwner
 	prm.FriendlyName = opts.FriendlyName
 
-	cnrID, err := a.neoFS.CreateContainer(ctx, prm)
+	cnrID, err := a.frostFS.CreateContainer(ctx, prm)
 	if err != nil {
-		return cid.ID{}, fmt.Errorf("create container in NeoFS: %w", err)
+		return cid.ID{}, fmt.Errorf("create container in FrostFS: %w", err)
 	}
 
 	return cnrID, nil
@@ -200,7 +200,7 @@ func preparePolicy(policy ContainerPolicies) ([]*accessbox.AccessBox_ContainerPo
 	return result, nil
 }
 
-// IssueSecret creates an auth token, puts it in the NeoFS network and writes to io.Writer a new secret access key.
+// IssueSecret creates an auth token, puts it in the FrostFS network and writes to io.Writer a new secret access key.
 func (a *Agent) IssueSecret(ctx context.Context, w io.Writer, options *IssueSecretOptions) error {
 	var (
 		err      error
@@ -213,7 +213,7 @@ func (a *Agent) IssueSecret(ctx context.Context, w io.Writer, options *IssueSecr
 		return fmt.Errorf("prepare policies: %w", err)
 	}
 
-	lifetime.Iat, lifetime.Exp, err = a.neoFS.TimeToEpoch(ctx, time.Now().Add(options.Lifetime))
+	lifetime.Iat, lifetime.Exp, err = a.frostFS.TimeToEpoch(ctx, time.Now().Add(options.Lifetime))
 	if err != nil {
 		return fmt.Errorf("fetch time to epoch: %w", err)
 	}
@@ -231,7 +231,7 @@ func (a *Agent) IssueSecret(ctx context.Context, w io.Writer, options *IssueSecr
 	box.ContainerPolicy = policies
 
 	var idOwner user.ID
-	user.IDFromKey(&idOwner, options.NeoFSKey.PrivateKey.PublicKey)
+	user.IDFromKey(&idOwner, options.FrostFSKey.PrivateKey.PublicKey)
 
 	a.log.Info("check container or create", zap.Stringer("cid", options.Container.ID),
 		zap.String("friendly_name", options.Container.FriendlyName),
@@ -241,11 +241,11 @@ func (a *Agent) IssueSecret(ctx context.Context, w io.Writer, options *IssueSecr
 		return fmt.Errorf("check container: %w", err)
 	}
 
-	a.log.Info("store bearer token into NeoFS",
+	a.log.Info("store bearer token into FrostFS",
 		zap.Stringer("owner_tkn", idOwner))
 
 	addr, err := tokens.
-		New(a.neoFS, secrets.EphemeralKey, cache.DefaultAccessBoxConfig(a.log)).
+		New(a.frostFS, secrets.EphemeralKey, cache.DefaultAccessBoxConfig(a.log)).
 		Put(ctx, id, idOwner, box, lifetime.Exp, options.GatesPublicKeys...)
 	if err != nil {
 		return fmt.Errorf("failed to put bearer token: %w", err)
@@ -260,7 +260,7 @@ func (a *Agent) IssueSecret(ctx context.Context, w io.Writer, options *IssueSecr
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: secrets.AccessKey,
 		OwnerPrivateKey: hex.EncodeToString(secrets.EphemeralKey.Bytes()),
-		WalletPublicKey: hex.EncodeToString(options.NeoFSKey.PublicKey().Bytes()),
+		WalletPublicKey: hex.EncodeToString(options.FrostFSKey.PublicKey().Bytes()),
 		ContainerID:     id.EncodeToString(),
 	}
 
@@ -288,10 +288,10 @@ func (a *Agent) IssueSecret(ctx context.Context, w io.Writer, options *IssueSecr
 	return nil
 }
 
-// ObtainSecret receives an existing secret access key from NeoFS and
+// ObtainSecret receives an existing secret access key from FrostFS and
 // writes to io.Writer the secret access key.
 func (a *Agent) ObtainSecret(ctx context.Context, w io.Writer, options *ObtainSecretOptions) error {
-	bearerCreds := tokens.New(a.neoFS, options.GatePrivateKey, cache.DefaultAccessBoxConfig(a.log))
+	bearerCreds := tokens.New(a.frostFS, options.GatePrivateKey, cache.DefaultAccessBoxConfig(a.log))
 
 	var addr oid.Address
 	if err := addr.DecodeString(options.SecretAddress); err != nil {
@@ -381,7 +381,7 @@ func buildSessionToken(key *keys.PrivateKey, lifetime lifetimeOptions, ctx sessi
 	tok.AppliedTo(ctx.containerID)
 
 	tok.SetID(uuid.New())
-	tok.SetAuthKey((*neofsecdsa.PublicKey)(gateKey))
+	tok.SetAuthKey((*frostfsecdsa.PublicKey)(gateKey))
 
 	tok.SetIat(lifetime.Iat)
 	tok.SetNbf(lifetime.Iat)
@@ -413,7 +413,7 @@ func createTokens(options *IssueSecretOptions, lifetime lifetimeOptions) ([]*acc
 	if err != nil {
 		return nil, fmt.Errorf("failed to build eacl table: %w", err)
 	}
-	bearerTokens, err := buildBearerTokens(options.NeoFSKey, table, lifetime, options.GatesPublicKeys)
+	bearerTokens, err := buildBearerTokens(options.FrostFSKey, table, lifetime, options.GatesPublicKeys)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build bearer tokens: %w", err)
 	}
@@ -427,7 +427,7 @@ func createTokens(options *IssueSecretOptions, lifetime lifetimeOptions) ([]*acc
 			return nil, fmt.Errorf("failed to build context for session token: %w", err)
 		}
 
-		sessionTokens, err := buildSessionTokens(options.NeoFSKey, lifetime, sessionRules, options.GatesPublicKeys)
+		sessionTokens, err := buildSessionTokens(options.FrostFSKey, lifetime, sessionRules, options.GatesPublicKeys)
 		if err != nil {
 			return nil, fmt.Errorf("failed to biuild session token: %w", err)
 		}

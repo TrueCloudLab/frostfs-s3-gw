@@ -38,7 +38,7 @@ func (n *layer) GetObjectTagging(ctx context.Context, p *GetObjectTaggingParams)
 
 	nodeVersion := p.NodeVersion
 	if nodeVersion == nil {
-		nodeVersion, err = n.getNodeVersionFromCacheOrNeofs(ctx, p.ObjectVersion)
+		nodeVersion, err = n.getNodeVersionFromCacheOrFrostfs(ctx, p.ObjectVersion)
 		if err != nil {
 			return "", nil, err
 		}
@@ -65,7 +65,7 @@ func (n *layer) GetObjectTagging(ctx context.Context, p *GetObjectTaggingParams)
 func (n *layer) PutObjectTagging(ctx context.Context, p *PutObjectTaggingParams) (nodeVersion *data.NodeVersion, err error) {
 	nodeVersion = p.NodeVersion
 	if nodeVersion == nil {
-		nodeVersion, err = n.getNodeVersionFromCacheOrNeofs(ctx, p.ObjectVersion)
+		nodeVersion, err = n.getNodeVersionFromCacheOrFrostfs(ctx, p.ObjectVersion)
 		if err != nil {
 			return nil, err
 		}

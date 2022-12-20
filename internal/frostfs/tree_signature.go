@@ -1,5 +1,5 @@
-/*REMOVE THIS AFTER SIGNATURE WILL BE AVAILABLE IN TREE CLIENT FROM NEOFS NODE*/
-package neofs
+/*REMOVE THIS AFTER SIGNATURE WILL BE AVAILABLE IN TREE CLIENT FROM FROSTFS NODE*/
+package frostfs
 
 import (
 	crypto "github.com/TrueCloudLab/frostfs-crypto"

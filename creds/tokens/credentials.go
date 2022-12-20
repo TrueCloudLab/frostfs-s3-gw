@@ -23,41 +23,41 @@ type (
 	}
 
 	cred struct {
-		key   *keys.PrivateKey
-		neoFS NeoFS
-		cache *cache.AccessBoxCache
+		key     *keys.PrivateKey
+		frostFS FrostFS
+		cache   *cache.AccessBoxCache
 	}
 )
 
 // PrmObjectCreate groups parameters of objects created by credential tool.
 type PrmObjectCreate struct {
-	// NeoFS identifier of the object creator.
+	// FrostFS identifier of the object creator.
 	Creator user.ID
 
-	// NeoFS container to store the object.
+	// FrostFS container to store the object.
 	Container cid.ID
 
 	// File path.
 	Filepath string
 
-	// Last NeoFS epoch of the object lifetime.
+	// Last FrostFS epoch of the object lifetime.
 	ExpirationEpoch uint64
 
 	// Object payload.
 	Payload []byte
 }
 
-// NeoFS represents virtual connection to NeoFS network.
-type NeoFS interface {
+// FrostFS represents virtual connection to FrostFS network.
+type FrostFS interface {
 	// CreateObject creates and saves a parameterized object in the specified
-	// NeoFS container from a specific user. It sets 'Timestamp' attribute to the current time.
+	// FrostFS container from a specific user. It sets 'Timestamp' attribute to the current time.
 	// It returns the ID of the saved object.
 	//
 	// It returns exactly one non-nil value. It returns any error encountered which
 	// prevented the object from being created.
 	CreateObject(context.Context, PrmObjectCreate) (oid.ID, error)
 
-	// ReadObjectPayload reads payload of the object from NeoFS network by address
+	// ReadObjectPayload reads payload of the object from FrostFS network by address
 	// into memory.
 	//
 	// It returns exactly one non-nil value. It returns any error encountered which
@@ -75,8 +75,8 @@ var (
 var _ = New
 
 // New creates a new Credentials instance using the given cli and key.
-func New(neoFS NeoFS, key *keys.PrivateKey, config *cache.Config) Credentials {
-	return &cred{neoFS: neoFS, key: key, cache: cache.NewAccessBoxCache(config)}
+func New(frostFS FrostFS, key *keys.PrivateKey, config *cache.Config) Credentials {
+	return &cred{frostFS: frostFS, key: key, cache: cache.NewAccessBoxCache(config)}
 }
 
 func (c *cred) GetBox(ctx context.Context, addr oid.Address) (*accessbox.Box, error) {
@@ -103,7 +103,7 @@ func (c *cred) GetBox(ctx context.Context, addr oid.Address) (*accessbox.Box, er
 }
 
 func (c *cred) getAccessBox(ctx context.Context, addr oid.Address) (*accessbox.AccessBox, error) {
-	data, err := c.neoFS.ReadObjectPayload(ctx, addr)
+	data, err := c.frostFS.ReadObjectPayload(ctx, addr)
 	if err != nil {
 		return nil, fmt.Errorf("read payload: %w", err)
 	}
@@ -128,7 +128,7 @@ func (c *cred) Put(ctx context.Context, idCnr cid.ID, issuer user.ID, box *acces
 		return oid.Address{}, fmt.Errorf("marshall box: %w", err)
 	}
 
-	idObj, err := c.neoFS.CreateObject(ctx, PrmObjectCreate{
+	idObj, err := c.frostFS.CreateObject(ctx, PrmObjectCreate{
 		Creator:         issuer,
 		Container:       idCnr,
 		Filepath:        strconv.FormatInt(time.Now().Unix(), 10) + "_access.box",

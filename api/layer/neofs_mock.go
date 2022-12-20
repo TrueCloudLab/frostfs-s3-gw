@@ -24,8 +24,8 @@ import (
 	"github.com/TrueCloudLab/frostfs-sdk-go/user"
 )
 
-type TestNeoFS struct {
-	NeoFS
+type TestFrostFS struct {
+	FrostFS
 
 	objects      map[string]*object.Object
 	containers   map[string]*container.Container
@@ -33,19 +33,19 @@ type TestNeoFS struct {
 	currentEpoch uint64
 }
 
-func NewTestNeoFS() *TestNeoFS {
-	return &TestNeoFS{
+func NewTestFrostFS() *TestFrostFS {
+	return &TestFrostFS{
 		objects:    make(map[string]*object.Object),
 		containers: make(map[string]*container.Container),
 		eaclTables: make(map[string]*eacl.Table),
 	}
 }
 
-func (t *TestNeoFS) CurrentEpoch() uint64 {
+func (t *TestFrostFS) CurrentEpoch() uint64 {
 	return t.currentEpoch
 }
 
-func (t *TestNeoFS) Objects() []*object.Object {
+func (t *TestFrostFS) Objects() []*object.Object {
 	res := make([]*object.Object, 0, len(t.objects))
 
 	for _, obj := range t.objects {
@@ -55,11 +55,11 @@ func (t *TestNeoFS) Objects() []*object.Object {
 	return res
 }
 
-func (t *TestNeoFS) AddObject(key string, obj *object.Object) {
+func (t *TestFrostFS) AddObject(key string, obj *object.Object) {
 	t.objects[key] = obj
 }
 
-func (t *TestNeoFS) ContainerID(name string) (cid.ID, error) {
+func (t *TestFrostFS) ContainerID(name string) (cid.ID, error) {
 	for id, cnr := range t.containers {
 		if container.Name(*cnr) == name {
 			var cnrID cid.ID
@@ -69,7 +69,7 @@ func (t *TestNeoFS) ContainerID(name string) (cid.ID, error) {
 	return cid.ID{}, fmt.Errorf("not found")
 }
 
-func (t *TestNeoFS) CreateContainer(_ context.Context, prm PrmContainerCreate) (cid.ID, error) {
+func (t *TestFrostFS) CreateContainer(_ context.Context, prm PrmContainerCreate) (cid.ID, error) {
 	var cnr container.Container
 	cnr.Init()
 	cnr.SetOwner(prm.Creator)
@@ -106,13 +106,13 @@ func (t *TestNeoFS) CreateContainer(_ context.Context, prm PrmContainerCreate) (
 	return id, nil
 }
 
-func (t *TestNeoFS) DeleteContainer(_ context.Context, cnrID cid.ID, _ *session.Container) error {
+func (t *TestFrostFS) DeleteContainer(_ context.Context, cnrID cid.ID, _ *session.Container) error {
 	delete(t.containers, cnrID.EncodeToString())
 
 	return nil
 }
 
-func (t *TestNeoFS) Container(_ context.Context, id cid.ID) (*container.Container, error) {
+func (t *TestFrostFS) Container(_ context.Context, id cid.ID) (*container.Container, error) {
 	for k, v := range t.containers {
 		if k == id.EncodeToString() {
 			return v, nil
@@ -122,7 +122,7 @@ func (t *TestNeoFS) Container(_ context.Context, id cid.ID) (*container.Containe
 	return nil, fmt.Errorf("container not found %s", id)
 }
 
-func (t *TestNeoFS) UserContainers(_ context.Context, _ user.ID) ([]cid.ID, error) {
+func (t *TestFrostFS) UserContainers(_ context.Context, _ user.ID) ([]cid.ID, error) {
 	var res []cid.ID
 	for k := range t.containers {
 		var idCnr cid.ID
@@ -135,7 +135,7 @@ func (t *TestNeoFS) UserContainers(_ context.Context, _ user.ID) ([]cid.ID, erro
 	return res, nil
 }
 
-func (t *TestNeoFS) ReadObject(ctx context.Context, prm PrmObjectRead) (*ObjectPart, error) {
+func (t *TestFrostFS) ReadObject(ctx context.Context, prm PrmObjectRead) (*ObjectPart, error) {
 	var addr oid.Address
 	addr.SetContainer(prm.Container)
 	addr.SetObject(prm.Object)
@@ -164,7 +164,7 @@ func (t *TestNeoFS) ReadObject(ctx context.Context, prm PrmObjectRead) (*ObjectP
 	return nil, fmt.Errorf("object not found %s", addr)
 }
 
-func (t *TestNeoFS) CreateObject(ctx context.Context, prm PrmObjectCreate) (oid.ID, error) {
+func (t *TestFrostFS) CreateObject(ctx context.Context, prm PrmObjectCreate) (oid.ID, error) {
 	b := make([]byte, 32)
 	if _, err := io.ReadFull(rand.Reader, b); err != nil {
 		return oid.ID{}, err
@@ -223,7 +223,7 @@ func (t *TestNeoFS) CreateObject(ctx context.Context, prm PrmObjectCreate) (oid.
 	return objID, nil
 }
 
-func (t *TestNeoFS) DeleteObject(ctx context.Context, prm PrmObjectDelete) error {
+func (t *TestFrostFS) DeleteObject(ctx context.Context, prm PrmObjectDelete) error {
 	var addr oid.Address
 	addr.SetContainer(prm.Container)
 	addr.SetObject(prm.Object)
@@ -240,11 +240,11 @@ func (t *TestNeoFS) DeleteObject(ctx context.Context, prm PrmObjectDelete) error
 	return nil
 }
 
-func (t *TestNeoFS) TimeToEpoch(_ context.Context, now, futureTime time.Time) (uint64, uint64, error) {
+func (t *TestFrostFS) TimeToEpoch(_ context.Context, now, futureTime time.Time) (uint64, uint64, error) {
 	return t.currentEpoch, t.currentEpoch + uint64(futureTime.Sub(now).Seconds()), nil
 }
 
-func (t *TestNeoFS) AllObjects(cnrID cid.ID) []oid.ID {
+func (t *TestFrostFS) AllObjects(cnrID cid.ID) []oid.ID {
 	result := make([]oid.ID, 0, len(t.objects))
 
 	for _, val := range t.objects {
@@ -258,7 +258,7 @@ func (t *TestNeoFS) AllObjects(cnrID cid.ID) []oid.ID {
 	return result
 }
 
-func (t *TestNeoFS) SetContainerEACL(_ context.Context, table eacl.Table, _ *session.Container) error {
+func (t *TestFrostFS) SetContainerEACL(_ context.Context, table eacl.Table, _ *session.Container) error {
 	cnrID, ok := table.CID()
 	if !ok {
 		return errors.New("invalid cid")
@@ -273,7 +273,7 @@ func (t *TestNeoFS) SetContainerEACL(_ context.Context, table eacl.Table, _ *ses
 	return nil
 }
 
-func (t *TestNeoFS) ContainerEACL(_ context.Context, cnrID cid.ID) (*eacl.Table, error) {
+func (t *TestFrostFS) ContainerEACL(_ context.Context, cnrID cid.ID) (*eacl.Table, error) {
 	table, ok := t.eaclTables[cnrID.EncodeToString()]
 	if !ok {
 		return nil, errors.New("not found")

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/TrueCloudLab/frostfs-sdk-go/bearer"
-	neofsecdsa "github.com/TrueCloudLab/frostfs-sdk-go/crypto/ecdsa"
+	frostfsecdsa "github.com/TrueCloudLab/frostfs-sdk-go/crypto/ecdsa"
 	"github.com/TrueCloudLab/frostfs-sdk-go/eacl"
 	"github.com/TrueCloudLab/frostfs-sdk-go/session"
 	"github.com/google/uuid"
@@ -89,7 +89,7 @@ func TestSessionTokenInAccessBox(t *testing.T) {
 	require.NoError(t, err)
 
 	tkn.SetID(uuid.New())
-	tkn.SetAuthKey((*neofsecdsa.PublicKey)(sec.PublicKey()))
+	tkn.SetAuthKey((*frostfsecdsa.PublicKey)(sec.PublicKey()))
 	require.NoError(t, tkn.Sign(sec.PrivateKey))
 
 	var newTkn bearer.Token

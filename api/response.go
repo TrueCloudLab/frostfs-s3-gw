@@ -117,7 +117,7 @@ func WriteErrorResponse(w http.ResponseWriter, reqInfo *ReqInfo, err error) int 
 		code = e.HTTPStatusCode
 
 		switch e.Code {
-		case "SlowDown", "XNeoFSServerNotInitialized", "XNeoFSReadQuorum", "XNeoFSWriteQuorum":
+		case "SlowDown", "XFrostFSServerNotInitialized", "XFrostFSReadQuorum", "XFrostFSWriteQuorum":
 			// Set retry-after header to indicate user-agents to retry request after 120secs.
 			// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After
 			w.Header().Set(hdrRetryAfter, "120")

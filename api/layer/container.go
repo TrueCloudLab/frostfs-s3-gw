@@ -41,14 +41,14 @@ func (n *layer) containerInfo(ctx context.Context, idCnr cid.ID) (*data.BucketIn
 			Name: idCnr.EncodeToString(),
 		}
 	)
-	res, err = n.neoFS.Container(ctx, idCnr)
+	res, err = n.frostFS.Container(ctx, idCnr)
 	if err != nil {
 		log.Error("could not fetch container", zap.Error(err))
 
 		if client.IsErrContainerNotFound(err) {
 			return nil, errors.GetAPIError(errors.ErrNoSuchBucket)
 		}
-		return nil, fmt.Errorf("get neofs container: %w", err)
+		return nil, fmt.Errorf("get frostfs container: %w", err)
 	}
 
 	cnr := *res
@@ -83,7 +83,7 @@ func (n *layer) containerList(ctx context.Context) ([]*data.BucketInfo, error) {
 		res []cid.ID
 		rid = api.GetRequestID(ctx)
 	)
-	res, err = n.neoFS.UserContainers(ctx, own)
+	res, err = n.frostFS.UserContainers(ctx, own)
 	if err != nil {
 		n.log.Error("could not list user containers",
 			zap.String("request_id", rid),
@@ -132,7 +132,7 @@ func (n *layer) createContainer(ctx context.Context, p *CreateBucketParams) (*da
 		})
 	}
 
-	idCnr, err := n.neoFS.CreateContainer(ctx, PrmContainerCreate{
+	idCnr, err := n.frostFS.CreateContainer(ctx, PrmContainerCreate{
 		Creator:              bktInfo.Owner,
 		Policy:               p.Policy,
 		Name:                 p.Name,
@@ -158,9 +158,9 @@ func (n *layer) createContainer(ctx context.Context, p *CreateBucketParams) (*da
 func (n *layer) setContainerEACLTable(ctx context.Context, idCnr cid.ID, table *eacl.Table, sessionToken *session.Container) error {
 	table.SetCID(idCnr)
 
-	return n.neoFS.SetContainerEACL(ctx, *table, sessionToken)
+	return n.frostFS.SetContainerEACL(ctx, *table, sessionToken)
 }
 
 func (n *layer) GetContainerEACL(ctx context.Context, idCnr cid.ID) (*eacl.Table, error) {
-	return n.neoFS.ContainerEACL(ctx, idCnr)
+	return n.frostFS.ContainerEACL(ctx, idCnr)
 }

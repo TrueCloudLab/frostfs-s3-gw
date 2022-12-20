@@ -1,6 +1,6 @@
 #!/bin/bash
 
-mkdir -p internal/neofs/services/tree 2>/dev/null
+mkdir -p internal/frostfs/services/tree 2>/dev/null
 
 REVISION="feaa9eace7098c343598bf08fb50746a1e8d2deb"
 
@@ -15,5 +15,5 @@ for file in $FILES; do
   else
     echo "sync '$file' in tree service"
   fi
-  curl -s "https://raw.githubusercontent.com/TrueCloudLab/frostfs-node/${REVISION}/pkg/services/tree/${file}" -o "./internal/neofs/services/tree/${file}"
+  curl -s "https://raw.githubusercontent.com/TrueCloudLab/frostfs-node/${REVISION}/pkg/services/tree/${file}" -o "./internal/frostfs/services/tree/${file}"
 done

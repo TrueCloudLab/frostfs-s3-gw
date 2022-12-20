@@ -114,7 +114,7 @@ func TestPutObjectOverrideCopiesNumber(t *testing.T) {
 	bktInfo := createTestBucket(tc, bktName)
 
 	w, r := prepareTestRequest(tc, bktName, objName, nil)
-	r.Header.Set(api.MetadataPrefix+strings.ToUpper(layer.AttributeNeofsCopiesNumber), "1")
+	r.Header.Set(api.MetadataPrefix+strings.ToUpper(layer.AttributeFrostfsCopiesNumber), "1")
 	tc.Handler().PutObjectHandler(w, r)
 
 	p := &layer.HeadObjectParams{
@@ -124,5 +124,5 @@ func TestPutObjectOverrideCopiesNumber(t *testing.T) {
 
 	objInfo, err := tc.Layer().GetObjectInfo(tc.Context(), p)
 	require.NoError(t, err)
-	require.Equal(t, "1", objInfo.Headers[layer.AttributeNeofsCopiesNumber])
+	require.Equal(t, "1", objInfo.Headers[layer.AttributeFrostfsCopiesNumber])
 }

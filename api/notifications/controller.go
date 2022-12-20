@@ -61,7 +61,7 @@ type (
 
 	EventRecord struct {
 		EventVersion      string            `json:"eventVersion"`
-		EventSource       string            `json:"eventSource"`         // neofs:s3
+		EventSource       string            `json:"eventSource"`         // frostfs:s3
 		AWSRegion         string            `json:"awsRegion,omitempty"` // empty
 		EventTime         time.Time         `json:"eventTime"`
 		EventName         string            `json:"eventName"`
@@ -199,7 +199,7 @@ func (c *Controller) SendNotifications(topics map[string]string, p *handler.Send
 
 func (c *Controller) SendTestNotification(topic, bucketName, requestID, HostID string, now time.Time) error {
 	event := &TestEvent{
-		Service:   "NeoFS S3",
+		Service:   "FrostFS S3",
 		Event:     "s3:TestEvent",
 		Time:      now,
 		Bucket:    bucketName,
@@ -220,7 +220,7 @@ func prepareEvent(p *handler.SendNotificationParams) *Event {
 		Records: []EventRecord{
 			{
 				EventVersion: EventVersion21,
-				EventSource:  "neofs:s3",
+				EventSource:  "frostfs:s3",
 				AWSRegion:    "",
 				EventTime:    p.Time,
 				EventName:    p.Event,

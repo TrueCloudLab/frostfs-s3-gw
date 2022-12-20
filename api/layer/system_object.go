@@ -32,7 +32,7 @@ func (n *layer) PutLockInfo(ctx context.Context, p *PutLockInfoParams) (err erro
 	// sometimes node version can be provided from executing context
 	// if not, then receive node version from tree service
 	if versionNode == nil {
-		versionNode, err = n.getNodeVersionFromCacheOrNeofs(ctx, p.ObjVersion)
+		versionNode, err = n.getNodeVersionFromCacheOrFrostfs(ctx, p.ObjVersion)
 		if err != nil {
 			return err
 		}
@@ -100,7 +100,7 @@ func (n *layer) PutLockInfo(ctx context.Context, p *PutLockInfoParams) (err erro
 	return nil
 }
 
-func (n *layer) getNodeVersionFromCacheOrNeofs(ctx context.Context, objVersion *ObjectVersion) (nodeVersion *data.NodeVersion, err error) {
+func (n *layer) getNodeVersionFromCacheOrFrostfs(ctx context.Context, objVersion *ObjectVersion) (nodeVersion *data.NodeVersion, err error) {
 	// check cache if node version is stored inside extendedObjectVersion
 	nodeVersion = n.getNodeVersionFromCache(n.Owner(ctx), objVersion)
 	if nodeVersion == nil {
@@ -228,7 +228,7 @@ func (n *layer) attributesFromLock(ctx context.Context, lock *data.ObjectLock) (
 	)
 
 	if lock.Retention != nil {
-		if _, expEpoch, err = n.neoFS.TimeToEpoch(ctx, TimeNow(ctx), lock.Retention.Until); err != nil {
+		if _, expEpoch, err = n.frostFS.TimeToEpoch(ctx, TimeNow(ctx), lock.Retention.Until); err != nil {
 			return nil, fmt.Errorf("fetch time to epoch: %w", err)
 		}
 
@@ -238,7 +238,7 @@ func (n *layer) attributesFromLock(ctx context.Context, lock *data.ObjectLock) (
 	}
 
 	if lock.LegalHold != nil && lock.LegalHold.Enabled {
-		// todo: (@KirillovDenis) reconsider this when NeoFS will support Legal Hold https://github.com/nspcc-dev/neofs-contract/issues/247
+		// todo: (@KirillovDenis) reconsider this when FrostFS will support Legal Hold https://github.com/nspcc-dev/neofs-contract/issues/247
 		// Currently lock object must have an expiration epoch.
 		// Besides we need to override retention expiration epoch since legal hold cannot be deleted yet.
 		expEpoch = math.MaxUint64

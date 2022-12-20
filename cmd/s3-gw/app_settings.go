@@ -121,9 +121,9 @@ const ( // Settings.
 
 	cmdListenAddress = "listen_address"
 
-	// Configuration of parameters of requests to NeoFS.
-	// Number of the object copies to consider PUT to NeoFS successful.
-	cfgSetCopiesNumber = "neofs.set_copies_number"
+	// Configuration of parameters of requests to FrostFS.
+	// Number of the object copies to consider PUT to FrostFS successful.
+	cfgSetCopiesNumber = "frostfs.set_copies_number"
 
 	// List of allowed AccessKeyID prefixes.
 	cfgAllowedAccessKeyIDPrefixes = "allowed_access_key_id_prefixes"
@@ -217,7 +217,7 @@ func newSettings() *viper.Viper {
 	flags.String(cmdConfig, "", "config path")
 
 	flags.Duration(cfgHealthcheckTimeout, defaultHealthcheckTimeout, "set timeout to check node health during rebalance")
-	flags.Duration(cfgConnectTimeout, defaultConnectTimeout, "set timeout to connect to NeoFS nodes")
+	flags.Duration(cfgConnectTimeout, defaultConnectTimeout, "set timeout to connect to FrostFS nodes")
 	flags.Duration(cfgRebalanceInterval, defaultRebalanceInterval, "set rebalance interval")
 
 	flags.Int(cfgMaxClientsCount, defaultMaxClientsCount, "set max-clients count")
@@ -227,7 +227,7 @@ func newSettings() *viper.Viper {
 	flags.String(cfgTLSCertFile, "", "TLS certificate file to use")
 	flags.String(cfgTLSKeyFile, "", "TLS key file to use")
 
-	peers := flags.StringArrayP(cfgPeers, "p", nil, "set NeoFS nodes")
+	peers := flags.StringArrayP(cfgPeers, "p", nil, "set FrostFS nodes")
 
 	flags.StringP(cfgRPCEndpoint, "r", "", "set RPC endpoint")
 	resolveMethods := flags.StringSlice(cfgResolveOrder, []string{resolver.DNSResolver}, "set bucket name resolve order")

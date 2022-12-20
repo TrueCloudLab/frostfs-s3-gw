@@ -25,7 +25,7 @@ func (v NodeVersion) IsDeleteMarker() bool {
 }
 
 // DeleteMarkerInfo is used to save object info if node in the tree service is delete marker.
-// We need this information because the "delete marker" object is no longer stored in NeoFS.
+// We need this information because the "delete marker" object is no longer stored in FrostFS.
 type DeleteMarkerInfo struct {
 	Created time.Time
 	Owner   user.ID

@@ -20,7 +20,7 @@ import (
 	After putting a record, it lives for a while (default value is 60 seconds).
 
 	When we receive a request from a user, we try to find the suitable and non-expired cache entry, go through the list
-	and get ObjectInfos from common object cache or with a request to NeoFS.
+	and get ObjectInfos from common object cache or with a request to FrostFS.
 
 	When we put an object into a container, we invalidate entries with prefixes that are prefixes of the object's name.
 */

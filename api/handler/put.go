@@ -313,7 +313,7 @@ func (h *handler) PutObjectHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getCopiesNumberOrDefault(metadata map[string]string, defaultCopiesNumber uint32) (uint32, error) {
-	copiesNumberStr, ok := metadata[layer.AttributeNeofsCopiesNumber]
+	copiesNumberStr, ok := metadata[layer.AttributeFrostfsCopiesNumber]
 	if !ok {
 		return defaultCopiesNumber, nil
 	}
