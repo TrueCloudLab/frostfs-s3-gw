@@ -238,7 +238,7 @@ func (n *layer) attributesFromLock(ctx context.Context, lock *data.ObjectLock) (
 	}
 
 	if lock.LegalHold != nil && lock.LegalHold.Enabled {
-		// todo: (@KirillovDenis) reconsider this when FrostFS will support Legal Hold https://github.com/nspcc-dev/neofs-contract/issues/247
+		// todo: (@KirillovDenis) reconsider this when FrostFS will support Legal Hold https://github.com/TrueCloudLab/frostfs-contract/issues/2
 		// Currently lock object must have an expiration epoch.
 		// Besides we need to override retention expiration epoch since legal hold cannot be deleted yet.
 		expEpoch = math.MaxUint64
