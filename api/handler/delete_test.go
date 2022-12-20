@@ -41,7 +41,7 @@ func TestDeleteObject(t *testing.T) {
 	deleteObject(t, tc, bktName, objName, emptyVersion)
 	checkNotFound(t, tc, bktName, objName, emptyVersion)
 
-	require.False(t, existInMockedNeoFS(tc, bktInfo, objInfo))
+	require.False(t, existInMockedFrostFS(tc, bktInfo, objInfo))
 }
 
 func TestDeleteObjectFromSuspended(t *testing.T) {
@@ -109,7 +109,7 @@ func TestDeleteObjectVersioned(t *testing.T) {
 	deleteObject(t, tc, bktName, objName, objInfo.VersionID())
 	checkNotFound(t, tc, bktName, objName, objInfo.VersionID())
 
-	require.False(t, existInMockedNeoFS(tc, bktInfo, objInfo), "object exists but shouldn't")
+	require.False(t, existInMockedFrostFS(tc, bktInfo, objInfo), "object exists but shouldn't")
 }
 
 func TestDeleteObjectUnversioned(t *testing.T) {
@@ -126,7 +126,7 @@ func TestDeleteObjectUnversioned(t *testing.T) {
 	require.Len(t, versions.DeleteMarker, 0, "delete markers must be empty")
 	require.Len(t, versions.Version, 0, "versions must be empty")
 
-	require.False(t, existInMockedNeoFS(tc, bktInfo, objInfo), "object exists but shouldn't")
+	require.False(t, existInMockedFrostFS(tc, bktInfo, objInfo), "object exists but shouldn't")
 }
 
 func TestRemoveDeleteMarker(t *testing.T) {
@@ -144,7 +144,7 @@ func TestRemoveDeleteMarker(t *testing.T) {
 	deleteObject(t, tc, bktName, objName, deleteMarkerVersion)
 	checkFound(t, tc, bktName, objName, emptyVersion)
 
-	require.True(t, existInMockedNeoFS(tc, bktInfo, objInfo), "object doesn't exist but should")
+	require.True(t, existInMockedFrostFS(tc, bktInfo, objInfo), "object doesn't exist but should")
 }
 
 func TestDeleteObjectCombined(t *testing.T) {
@@ -161,7 +161,7 @@ func TestDeleteObjectCombined(t *testing.T) {
 
 	checkFound(t, tc, bktName, objName, objInfo.VersionID())
 
-	require.True(t, existInMockedNeoFS(tc, bktInfo, objInfo), "object doesn't exist but should")
+	require.True(t, existInMockedFrostFS(tc, bktInfo, objInfo), "object doesn't exist but should")
 }
 
 func TestDeleteObjectSuspended(t *testing.T) {
@@ -181,7 +181,7 @@ func TestDeleteObjectSuspended(t *testing.T) {
 	deleteObject(t, tc, bktName, objName, emptyVersion)
 	checkNotFound(t, tc, bktName, objName, objInfo.VersionID())
 
-	require.False(t, existInMockedNeoFS(tc, bktInfo, objInfo), "object exists but shouldn't")
+	require.False(t, existInMockedFrostFS(tc, bktInfo, objInfo), "object exists but shouldn't")
 }
 
 func TestDeleteMarkers(t *testing.T) {
@@ -200,7 +200,7 @@ func TestDeleteMarkers(t *testing.T) {
 	require.Len(t, versions.DeleteMarker, 3, "invalid delete markers length")
 	require.Len(t, versions.Version, 0, "versions must be empty")
 
-	require.Len(t, listOIDsFromMockedNeoFS(t, tc, bktName), 0, "shouldn't be any object in neofs")
+	require.Len(t, listOIDsFromMockedFrostFS(t, tc, bktName), 0, "shouldn't be any object in frostfs")
 }
 
 func TestDeleteObjectFromListCache(t *testing.T) {
@@ -220,7 +220,7 @@ func TestDeleteObjectFromListCache(t *testing.T) {
 	versions = listObjectsV1(t, tc, bktName, "", "", "", -1)
 	require.Len(t, versions.Contents, 0)
 
-	require.False(t, existInMockedNeoFS(tc, bktInfo, objInfo))
+	require.False(t, existInMockedFrostFS(tc, bktInfo, objInfo))
 }
 
 func TestDeleteObjectCheckMarkerReturn(t *testing.T) {

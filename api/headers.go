@@ -2,17 +2,17 @@ package api
 
 // Standard S3 HTTP request/response constants.
 const (
-	MetadataPrefix            = "X-Amz-Meta-"
-	NeoFSSystemMetadataPrefix = "S3-"
-	AmzMetadataDirective      = "X-Amz-Metadata-Directive"
-	AmzTaggingDirective       = "X-Amz-Tagging-Directive"
-	AmzVersionID              = "X-Amz-Version-Id"
-	AmzTaggingCount           = "X-Amz-Tagging-Count"
-	AmzTagging                = "X-Amz-Tagging"
-	AmzDeleteMarker           = "X-Amz-Delete-Marker"
-	AmzCopySource             = "X-Amz-Copy-Source"
-	AmzCopySourceRange        = "X-Amz-Copy-Source-Range"
-	AmzDate                   = "X-Amz-Date"
+	MetadataPrefix              = "X-Amz-Meta-"
+	FrostFSSystemMetadataPrefix = "S3-"
+	AmzMetadataDirective        = "X-Amz-Metadata-Directive"
+	AmzTaggingDirective         = "X-Amz-Tagging-Directive"
+	AmzVersionID                = "X-Amz-Version-Id"
+	AmzTaggingCount             = "X-Amz-Tagging-Count"
+	AmzTagging                  = "X-Amz-Tagging"
+	AmzDeleteMarker             = "X-Amz-Delete-Marker"
+	AmzCopySource               = "X-Amz-Copy-Source"
+	AmzCopySourceRange          = "X-Amz-Copy-Source-Range"
+	AmzDate                     = "X-Amz-Date"
 
 	LastModified       = "Last-Modified"
 	Date               = "Date"

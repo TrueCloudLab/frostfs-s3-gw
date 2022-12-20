@@ -15,7 +15,7 @@ import (
 
 	"github.com/TrueCloudLab/frostfs-s3-gw/api"
 	"github.com/TrueCloudLab/frostfs-s3-gw/authmate"
-	"github.com/TrueCloudLab/frostfs-s3-gw/internal/neofs"
+	"github.com/TrueCloudLab/frostfs-s3-gw/internal/frostfs"
 	"github.com/TrueCloudLab/frostfs-s3-gw/internal/version"
 	"github.com/TrueCloudLab/frostfs-s3-gw/internal/wallet"
 	cid "github.com/TrueCloudLab/frostfs-sdk-go/container/id"
@@ -164,7 +164,7 @@ func appCommands() []*cli.Command {
 func issueSecret() *cli.Command {
 	return &cli.Command{
 		Name:  "issue-secret",
-		Usage: "Issue a secret in NeoFS network",
+		Usage: "Issue a secret in FrostFS network",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "wallet",
@@ -183,7 +183,7 @@ func issueSecret() *cli.Command {
 			&cli.StringFlag{
 				Name:        "peer",
 				Value:       "",
-				Usage:       "address of a neofs peer to connect to",
+				Usage:       "address of a frostfs peer to connect to",
 				Required:    true,
 				Destination: &peerAddressFlag,
 			},
@@ -235,7 +235,7 @@ It will be ceil rounded to the nearest amount of epoch.`,
 			},
 			&cli.StringFlag{
 				Name:        "container-policy",
-				Usage:       "mapping AWS storage class to NeoFS storage policy as plain json string or path to json file",
+				Usage:       "mapping AWS storage class to FrostFS storage policy as plain json string or path to json file",
 				Required:    false,
 				Destination: &containerPolicies,
 			},
@@ -252,18 +252,18 @@ It will be ceil rounded to the nearest amount of epoch.`,
 			password := wallet.GetPassword(viper.GetViper(), envWalletPassphrase)
 			key, err := wallet.GetKeyFromPath(walletPathFlag, accountAddressFlag, password)
 			if err != nil {
-				return cli.Exit(fmt.Sprintf("failed to load neofs private key: %s", err), 1)
+				return cli.Exit(fmt.Sprintf("failed to load frostfs private key: %s", err), 1)
 			}
 
 			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
 
-			neoFS, err := createNeoFS(ctx, log, &key.PrivateKey, peerAddressFlag)
+			frostFS, err := createFrostFS(ctx, log, &key.PrivateKey, peerAddressFlag)
 			if err != nil {
-				return cli.Exit(fmt.Sprintf("failed to create NeoFS component: %s", err), 2)
+				return cli.Exit(fmt.Sprintf("failed to create FrostFS component: %s", err), 2)
 			}
 
-			agent := authmate.New(log, neoFS)
+			agent := authmate.New(log, frostFS)
 
 			var containerID cid.ID
 			if len(containerIDFlag) > 0 {
@@ -306,7 +306,7 @@ It will be ceil rounded to the nearest amount of epoch.`,
 					FriendlyName:    containerFriendlyName,
 					PlacementPolicy: containerPlacementPolicy,
 				},
-				NeoFSKey:              key,
+				FrostFSKey:            key,
 				GatesPublicKeys:       gatesPublicKeys,
 				EACLRules:             bearerRules,
 				SessionTokenRules:     sessionRules,
@@ -335,7 +335,7 @@ func generatePresignedURL() *cli.Command {
 You provide profile to load using --profile flag or explicitly provide credentials and region using
 --aws-access-key-id, --aws-secret-access-key, --region.
 Note to override credentials you must provide both access key and secret key.`,
-		Usage: "generate-presigned-url --endpoint http://s3.neofs.devenv:8080 --bucket bucket-name --object object-name --method get --profile aws-profile",
+		Usage: "generate-presigned-url --endpoint http://s3.frostfs.devenv:8080 --bucket bucket-name --object object-name --method get --profile aws-profile",
 		Flags: []cli.Flag{
 			&cli.DurationFlag{
 				Name: "lifetime",
@@ -499,7 +499,7 @@ func getSessionRules(r string) ([]byte, bool, error) {
 func obtainSecret() *cli.Command {
 	command := &cli.Command{
 		Name:  "obtain-secret",
-		Usage: "Obtain a secret from NeoFS network",
+		Usage: "Obtain a secret from FrostFS network",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "wallet",
@@ -518,7 +518,7 @@ func obtainSecret() *cli.Command {
 			&cli.StringFlag{
 				Name:        "peer",
 				Value:       "",
-				Usage:       "address of neofs peer to connect to",
+				Usage:       "address of frostfs peer to connect to",
 				Required:    true,
 				Destination: &peerAddressFlag,
 			},
@@ -549,18 +549,18 @@ func obtainSecret() *cli.Command {
 			password := wallet.GetPassword(viper.GetViper(), envWalletPassphrase)
 			key, err := wallet.GetKeyFromPath(walletPathFlag, accountAddressFlag, password)
 			if err != nil {
-				return cli.Exit(fmt.Sprintf("failed to load neofs private key: %s", err), 1)
+				return cli.Exit(fmt.Sprintf("failed to load frostfs private key: %s", err), 1)
 			}
 
 			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
 
-			neoFS, err := createNeoFS(ctx, log, &key.PrivateKey, peerAddressFlag)
+			frostFS, err := createFrostFS(ctx, log, &key.PrivateKey, peerAddressFlag)
 			if err != nil {
-				return cli.Exit(fmt.Sprintf("failed to create NeoFS component: %s", err), 2)
+				return cli.Exit(fmt.Sprintf("failed to create FrostFS component: %s", err), 2)
 			}
 
-			agent := authmate.New(log, neoFS)
+			agent := authmate.New(log, frostFS)
 
 			var _ = agent
 
@@ -591,7 +591,7 @@ func obtainSecret() *cli.Command {
 	return command
 }
 
-func createNeoFS(ctx context.Context, log *zap.Logger, key *ecdsa.PrivateKey, peerAddress string) (authmate.NeoFS, error) {
+func createFrostFS(ctx context.Context, log *zap.Logger, key *ecdsa.PrivateKey, peerAddress string) (authmate.FrostFS, error) {
 	log.Debug("prepare connection pool")
 
 	var prm pool.InitParameters
@@ -609,5 +609,5 @@ func createNeoFS(ctx context.Context, log *zap.Logger, key *ecdsa.PrivateKey, pe
 		return nil, fmt.Errorf("dial pool: %w", err)
 	}
 
-	return neofs.NewAuthmateNeoFS(p), nil
+	return frostfs.NewAuthmateFrostFS(p), nil
 }

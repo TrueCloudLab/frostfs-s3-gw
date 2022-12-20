@@ -20,7 +20,7 @@ import (
 	"github.com/TrueCloudLab/frostfs-s3-gw/api/layer"
 	"github.com/TrueCloudLab/frostfs-s3-gw/api/notifications"
 	"github.com/TrueCloudLab/frostfs-s3-gw/api/resolver"
-	"github.com/TrueCloudLab/frostfs-s3-gw/internal/neofs"
+	"github.com/TrueCloudLab/frostfs-s3-gw/internal/frostfs"
 	"github.com/TrueCloudLab/frostfs-s3-gw/internal/version"
 	"github.com/TrueCloudLab/frostfs-s3-gw/internal/wallet"
 	"github.com/TrueCloudLab/frostfs-sdk-go/netmap"
@@ -88,7 +88,7 @@ func newApp(ctx context.Context, log *Logger, v *viper.Viper) *App {
 	conns, key := getPool(ctx, log.logger, v)
 
 	// prepare auth center
-	ctr := auth.New(neofs.NewAuthmateNeoFS(conns), key, v.GetStringSlice(cfgAllowedAccessKeyIDPrefixes), getAccessBoxCacheConfig(v, log.logger))
+	ctr := auth.New(frostfs.NewAuthmateFrostFS(conns), key, v.GetStringSlice(cfgAllowedAccessKeyIDPrefixes), getAccessBoxCacheConfig(v, log.logger))
 
 	app := &App{
 		ctr:  ctr,
@@ -119,7 +119,7 @@ func (a *App) initLayer(ctx context.Context) {
 	a.initResolver()
 
 	treeServiceEndpoint := a.cfg.GetString(cfgTreeServiceEndpoint)
-	treeService, err := neofs.NewTreeClient(ctx, treeServiceEndpoint, a.key)
+	treeService, err := frostfs.NewTreeClient(ctx, treeServiceEndpoint, a.key)
 	if err != nil {
 		a.log.Fatal("failed to create tree service", zap.Error(err))
 	}
@@ -141,7 +141,7 @@ func (a *App) initLayer(ctx context.Context) {
 	}
 
 	// prepare object layer
-	a.obj = layer.NewLayer(a.log, neofs.NewNeoFS(a.pool), layerCfg)
+	a.obj = layer.NewLayer(a.log, frostfs.NewFrostFS(a.pool), layerCfg)
 
 	if a.cfg.GetBool(cfgEnableNATS) {
 		nopts := getNotificationsOptions(a.cfg, a.log)
@@ -183,7 +183,7 @@ func (a *App) initAPI(ctx context.Context) {
 }
 
 func (a *App) initMetrics() {
-	gateMetricsProvider := newGateMetrics(neofs.NewPoolStatistic(a.pool))
+	gateMetricsProvider := newGateMetrics(frostfs.NewPoolStatistic(a.pool))
 	a.metrics = newAppMetrics(a.log, gateMetricsProvider, a.cfg.GetBool(cfgPrometheusEnabled))
 }
 
@@ -197,7 +197,7 @@ func (a *App) initResolver() {
 
 func (a *App) getResolverConfig() ([]string, *resolver.Config) {
 	resolveCfg := &resolver.Config{
-		NeoFS:      neofs.NewResolverNeoFS(a.pool),
+		FrostFS:    frostfs.NewResolverFrostFS(a.pool),
 		RPCAddress: a.cfg.GetString(cfgRPCEndpoint),
 	}
 
@@ -234,11 +234,11 @@ func getPool(ctx context.Context, logger *zap.Logger, cfg *viper.Viper) (*pool.P
 	password := wallet.GetPassword(cfg, cfgWalletPassphrase)
 	key, err := wallet.GetKeyFromPath(cfg.GetString(cfgWalletPath), cfg.GetString(cfgWalletAddress), password)
 	if err != nil {
-		logger.Fatal("could not load NeoFS private key", zap.Error(err))
+		logger.Fatal("could not load FrostFS private key", zap.Error(err))
 	}
 
 	prm.SetKey(&key.PrivateKey)
-	logger.Info("using credentials", zap.String("NeoFS", hex.EncodeToString(key.PublicKey().Bytes())))
+	logger.Info("using credentials", zap.String("FrostFS", hex.EncodeToString(key.PublicKey().Bytes())))
 
 	for _, peer := range fetchPeers(logger, cfg) {
 		prm.AddNode(peer)
@@ -396,7 +396,7 @@ func remove(list []string, element string) []string {
 // Wait waits for an application to finish.
 //
 // Pre-logs a message about the launch of the application mentioning its
-// version (version.Version) and its name (neofs-s3-gw). At the end, it writes
+// version (version.Version) and its name (frostfs-s3-gw). At the end, it writes
 // about the stop to the log.
 func (a *App) Wait() {
 	a.log.Info("application started",

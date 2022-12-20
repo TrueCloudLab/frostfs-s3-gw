@@ -31,7 +31,7 @@ type handlerContext struct {
 	owner   user.ID
 	t       *testing.T
 	h       *handler
-	tp      *layer.TestNeoFS
+	tp      *layer.TestFrostFS
 	context context.Context
 }
 
@@ -39,7 +39,7 @@ func (hc *handlerContext) Handler() *handler {
 	return hc.h
 }
 
-func (hc *handlerContext) MockedPool() *layer.TestNeoFS {
+func (hc *handlerContext) MockedPool() *layer.TestFrostFS {
 	return hc.tp
 }
 
@@ -68,7 +68,7 @@ func prepareHandlerContext(t *testing.T) *handlerContext {
 	require.NoError(t, err)
 
 	l := zap.NewExample()
-	tp := layer.NewTestNeoFS()
+	tp := layer.NewTestFrostFS()
 
 	testResolver := &resolver.Resolver{Name: "test_resolver"}
 	testResolver.SetResolveFunc(func(_ context.Context, name string) (cid.ID, error) {
@@ -208,7 +208,7 @@ func parseTestResponse(t *testing.T, response *httptest.ResponseRecorder, body i
 	require.NoError(t, err)
 }
 
-func existInMockedNeoFS(tc *handlerContext, bktInfo *data.BucketInfo, objInfo *data.ObjectInfo) bool {
+func existInMockedFrostFS(tc *handlerContext, bktInfo *data.BucketInfo, objInfo *data.ObjectInfo) bool {
 	p := &layer.GetObjectParams{
 		BucketInfo: bktInfo,
 		ObjectInfo: objInfo,
@@ -218,7 +218,7 @@ func existInMockedNeoFS(tc *handlerContext, bktInfo *data.BucketInfo, objInfo *d
 	return tc.Layer().GetObject(tc.Context(), p) == nil
 }
 
-func listOIDsFromMockedNeoFS(t *testing.T, tc *handlerContext, bktName string) []oid.ID {
+func listOIDsFromMockedFrostFS(t *testing.T, tc *handlerContext, bktName string) []oid.ID {
 	bktInfo, err := tc.Layer().GetBucketInfo(tc.Context(), bktName)
 	require.NoError(t, err)
 

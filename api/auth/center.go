@@ -92,9 +92,9 @@ func (p prs) Seek(_ int64, _ int) (int64, error) {
 var _ io.ReadSeeker = prs(0)
 
 // New creates an instance of AuthCenter.
-func New(neoFS tokens.NeoFS, key *keys.PrivateKey, prefixes []string, config *cache.Config) Center {
+func New(frostFS tokens.FrostFS, key *keys.PrivateKey, prefixes []string, config *cache.Config) Center {
 	return &center{
-		cli:                        tokens.New(neoFS, key, config),
+		cli:                        tokens.New(frostFS, key, config),
 		reg:                        NewRegexpMatcher(authorizationFieldRegexp),
 		postReg:                    NewRegexpMatcher(postPolicyCredentialRegexp),
 		allowedAccessKeyIDPrefixes: prefixes,

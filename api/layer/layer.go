@@ -45,7 +45,7 @@ type (
 	}
 
 	layer struct {
-		neoFS       NeoFS
+		frostFS     FrostFS
 		log         *zap.Logger
 		anonKey     AnonymousKey
 		resolver    BucketResolver
@@ -250,12 +250,12 @@ const (
 
 	AESEncryptionAlgorithm       = "AES256"
 	AESKeySize                   = 32
-	AttributeEncryptionAlgorithm = api.NeoFSSystemMetadataPrefix + "Algorithm"
-	AttributeDecryptedSize       = api.NeoFSSystemMetadataPrefix + "Decrypted-Size"
-	AttributeHMACSalt            = api.NeoFSSystemMetadataPrefix + "HMAC-Salt"
-	AttributeHMACKey             = api.NeoFSSystemMetadataPrefix + "HMAC-Key"
+	AttributeEncryptionAlgorithm = api.FrostFSSystemMetadataPrefix + "Algorithm"
+	AttributeDecryptedSize       = api.FrostFSSystemMetadataPrefix + "Decrypted-Size"
+	AttributeHMACSalt            = api.FrostFSSystemMetadataPrefix + "HMAC-Salt"
+	AttributeHMACKey             = api.FrostFSSystemMetadataPrefix + "HMAC-Key"
 
-	AttributeNeofsCopiesNumber = "neofs-copies-number" // such formate to match X-Amz-Meta-Neofs-Copies-Number header
+	AttributeFrostfsCopiesNumber = "frostfs-copies-number" // such format to match X-Amz-Meta-Frostfs-Copies-Number header
 )
 
 func (t *VersionedObject) String() string {
@@ -268,9 +268,9 @@ func (f MsgHandlerFunc) HandleMessage(ctx context.Context, msg *nats.Msg) error 
 
 // NewLayer creates an instance of a layer. It checks credentials
 // and establishes gRPC connection with the node.
-func NewLayer(log *zap.Logger, neoFS NeoFS, config *Config) Client {
+func NewLayer(log *zap.Logger, frostFS FrostFS, config *Config) Client {
 	return &layer{
-		neoFS:       neoFS,
+		frostFS:     frostFS,
 		log:         log,
 		anonKey:     config.AnonKey,
 		resolver:    config.Resolver,
@@ -377,7 +377,7 @@ func (n *layer) PutBucketACL(ctx context.Context, param *PutBucketACLParams) err
 }
 
 // ListBuckets returns all user containers. The name of the bucket is a container
-// id. Timestamp is omitted since it is not saved in neofs container.
+// id. Timestamp is omitted since it is not saved in frostfs container.
 func (n *layer) ListBuckets(ctx context.Context) ([]*data.BucketInfo, error) {
 	return n.containerList(ctx)
 }
@@ -661,5 +661,5 @@ func (n *layer) DeleteBucket(ctx context.Context, p *DeleteBucketParams) error {
 	}
 
 	n.cache.DeleteBucket(p.BktInfo.Name)
-	return n.neoFS.DeleteContainer(ctx, p.BktInfo.CID, p.SessionToken)
+	return n.frostFS.DeleteContainer(ctx, p.BktInfo.CID, p.SessionToken)
 }

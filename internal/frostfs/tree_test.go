@@ -1,4 +1,4 @@
-package neofs
+package frostfs
 
 import (
 	"errors"

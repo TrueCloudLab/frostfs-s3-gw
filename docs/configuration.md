@@ -165,7 +165,7 @@ There are some custom types used for brevity:
 | `cors`             | [CORS configuration](#cors-section)                         |
 | `pprof`            | [Pprof configuration](#pprof-section)                       |
 | `prometheus`       | [Prometheus configuration](#prometheus-section)             |
-| `neofs`            | [Parameters of requests to FrostFS](#neofs-section)         |
+| `frostfs`          | [Parameters of requests to FrostFS](#frostfs-section)       |
 
 ### General section
 
@@ -447,10 +447,10 @@ prometheus:
 | `enabled` | `bool`   | yes           | `false`          | Flag to enable the service.             |
 | `address` | `string` | yes           | `localhost:8086` | Address that service listener binds to. |
 
-# `neofs` section
+# `frostfs` section
 
 Contains parameters of requests to FrostFS. 
-This value can be overridden with `X-Amz-Meta-Neofs-Copies-Number` header for `PutObject`, `CopyObject`, `CreateMultipartUpload`.
+This value can be overridden with `X-Amz-Meta-Frostfs-Copies-Number` header for `PutObject`, `CopyObject`, `CreateMultipartUpload`.
 
 ```yaml
 frostfs:

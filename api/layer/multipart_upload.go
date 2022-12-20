@@ -311,7 +311,7 @@ func (n *layer) UploadPartCopy(ctx context.Context, p *UploadCopyParams) (*data.
 	return n.uploadPart(ctx, multipartInfo, params)
 }
 
-// implements io.Reader of payloads of the object list stored in the NeoFS network.
+// implements io.Reader of payloads of the object list stored in the FrostFS network.
 type multiObjectReader struct {
 	ctx context.Context
 

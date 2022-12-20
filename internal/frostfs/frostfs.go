@@ -1,4 +1,4 @@
-package neofs
+package frostfs
 
 import (
 	"bytes"
@@ -26,10 +26,10 @@ import (
 	"github.com/TrueCloudLab/frostfs-sdk-go/user"
 )
 
-// NeoFS represents virtual connection to the NeoFS network.
+// FrostFS represents virtual connection to the FrostFS network.
 // It is used to provide an interface to dependent packages
-// which work with NeoFS.
-type NeoFS struct {
+// which work with FrostFS.
+type FrostFS struct {
 	pool  *pool.Pool
 	await pool.WaitParams
 }
@@ -39,20 +39,20 @@ const (
 	defaultPollTimeout  = 120 * time.Second // same as default value from pool
 )
 
-// NewNeoFS creates new NeoFS using provided pool.Pool.
-func NewNeoFS(p *pool.Pool) *NeoFS {
+// NewFrostFS creates new FrostFS using provided pool.Pool.
+func NewFrostFS(p *pool.Pool) *FrostFS {
 	var await pool.WaitParams
 	await.SetPollInterval(defaultPollInterval)
 	await.SetTimeout(defaultPollTimeout)
 
-	return &NeoFS{
+	return &FrostFS{
 		pool:  p,
 		await: await,
 	}
 }
 
-// TimeToEpoch implements neofs.NeoFS interface method.
-func (x *NeoFS) TimeToEpoch(ctx context.Context, now, futureTime time.Time) (uint64, uint64, error) {
+// TimeToEpoch implements frostfs.FrostFS interface method.
+func (x *FrostFS) TimeToEpoch(ctx context.Context, now, futureTime time.Time) (uint64, uint64, error) {
 	dur := futureTime.Sub(now)
 	if dur < 0 {
 		return 0, 0, fmt.Errorf("time '%s' must be in the future (after %s)",
@@ -87,8 +87,8 @@ func (x *NeoFS) TimeToEpoch(ctx context.Context, now, futureTime time.Time) (uin
 	return curr, epoch, nil
 }
 
-// Container implements neofs.NeoFS interface method.
-func (x *NeoFS) Container(ctx context.Context, idCnr cid.ID) (*container.Container, error) {
+// Container implements frostfs.FrostFS interface method.
+func (x *FrostFS) Container(ctx context.Context, idCnr cid.ID) (*container.Container, error) {
 	var prm pool.PrmContainerGet
 	prm.SetContainerID(idCnr)
 
@@ -102,10 +102,10 @@ func (x *NeoFS) Container(ctx context.Context, idCnr cid.ID) (*container.Contain
 
 var basicACLZero acl.Basic
 
-// CreateContainer implements neofs.NeoFS interface method.
+// CreateContainer implements frostfs.FrostFS interface method.
 //
 // If prm.BasicACL is zero, 'eacl-public-read-write' is used.
-func (x *NeoFS) CreateContainer(ctx context.Context, prm layer.PrmContainerCreate) (cid.ID, error) {
+func (x *FrostFS) CreateContainer(ctx context.Context, prm layer.PrmContainerCreate) (cid.ID, error) {
 	if prm.BasicACL == basicACLZero {
 		prm.BasicACL = acl.PublicRWExtended
 	}
@@ -156,8 +156,8 @@ func (x *NeoFS) CreateContainer(ctx context.Context, prm layer.PrmContainerCreat
 	return idCnr, nil
 }
 
-// UserContainers implements neofs.NeoFS interface method.
-func (x *NeoFS) UserContainers(ctx context.Context, id user.ID) ([]cid.ID, error) {
+// UserContainers implements frostfs.FrostFS interface method.
+func (x *FrostFS) UserContainers(ctx context.Context, id user.ID) ([]cid.ID, error) {
 	var prm pool.PrmContainerList
 	prm.SetOwnerID(id)
 
@@ -169,8 +169,8 @@ func (x *NeoFS) UserContainers(ctx context.Context, id user.ID) ([]cid.ID, error
 	return r, nil
 }
 
-// SetContainerEACL implements neofs.NeoFS interface method.
-func (x *NeoFS) SetContainerEACL(ctx context.Context, table eacl.Table, sessionToken *session.Container) error {
+// SetContainerEACL implements frostfs.FrostFS interface method.
+func (x *FrostFS) SetContainerEACL(ctx context.Context, table eacl.Table, sessionToken *session.Container) error {
 	var prm pool.PrmContainerSetEACL
 	prm.SetTable(table)
 	prm.SetWaitParams(x.await)
@@ -187,8 +187,8 @@ func (x *NeoFS) SetContainerEACL(ctx context.Context, table eacl.Table, sessionT
 	return err
 }
 
-// ContainerEACL implements neofs.NeoFS interface method.
-func (x *NeoFS) ContainerEACL(ctx context.Context, id cid.ID) (*eacl.Table, error) {
+// ContainerEACL implements frostfs.FrostFS interface method.
+func (x *FrostFS) ContainerEACL(ctx context.Context, id cid.ID) (*eacl.Table, error) {
 	var prm pool.PrmContainerEACL
 	prm.SetContainerID(id)
 
@@ -200,8 +200,8 @@ func (x *NeoFS) ContainerEACL(ctx context.Context, id cid.ID) (*eacl.Table, erro
 	return &res, nil
 }
 
-// DeleteContainer implements neofs.NeoFS interface method.
-func (x *NeoFS) DeleteContainer(ctx context.Context, id cid.ID, token *session.Container) error {
+// DeleteContainer implements frostfs.FrostFS interface method.
+func (x *FrostFS) DeleteContainer(ctx context.Context, id cid.ID, token *session.Container) error {
 	var prm pool.PrmContainerDelete
 	prm.SetContainerID(id)
 	prm.SetWaitParams(x.await)
@@ -218,8 +218,8 @@ func (x *NeoFS) DeleteContainer(ctx context.Context, id cid.ID, token *session.C
 	return nil
 }
 
-// CreateObject implements neofs.NeoFS interface method.
-func (x *NeoFS) CreateObject(ctx context.Context, prm layer.PrmObjectCreate) (oid.ID, error) {
+// CreateObject implements frostfs.FrostFS interface method.
+func (x *FrostFS) CreateObject(ctx context.Context, prm layer.PrmObjectCreate) (oid.ID, error) {
 	attrNum := len(prm.Attributes) + 1 // + creation time
 
 	if prm.Filepath != "" {
@@ -290,7 +290,7 @@ func (x *NeoFS) CreateObject(ctx context.Context, prm layer.PrmObjectCreate) (oi
 }
 
 // wraps io.ReadCloser and transforms Read errors related to access violation
-// to neofs.ErrAccessDenied.
+// to frostfs.ErrAccessDenied.
 type payloadReader struct {
 	io.ReadCloser
 }
@@ -306,8 +306,8 @@ func (x payloadReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
-// ReadObject implements neofs.NeoFS interface method.
-func (x *NeoFS) ReadObject(ctx context.Context, prm layer.PrmObjectRead) (*layer.ObjectPart, error) {
+// ReadObject implements frostfs.FrostFS interface method.
+func (x *FrostFS) ReadObject(ctx context.Context, prm layer.PrmObjectRead) (*layer.ObjectPart, error) {
 	var addr oid.Address
 	addr.SetContainer(prm.Container)
 	addr.SetObject(prm.Object)
@@ -407,8 +407,8 @@ func (x *NeoFS) ReadObject(ctx context.Context, prm layer.PrmObjectRead) (*layer
 	}, nil
 }
 
-// DeleteObject implements neofs.NeoFS interface method.
-func (x *NeoFS) DeleteObject(ctx context.Context, prm layer.PrmObjectDelete) error {
+// DeleteObject implements frostfs.FrostFS interface method.
+func (x *FrostFS) DeleteObject(ctx context.Context, prm layer.PrmObjectDelete) error {
 	var addr oid.Address
 	addr.SetContainer(prm.Container)
 	addr.SetObject(prm.Object)
@@ -451,19 +451,19 @@ func isErrAccessDenied(err error) (string, bool) {
 	}
 }
 
-// ResolverNeoFS represents virtual connection to the NeoFS network.
-// It implements resolver.NeoFS.
-type ResolverNeoFS struct {
+// ResolverFrostFS represents virtual connection to the FrostFS network.
+// It implements resolver.FrostFS.
+type ResolverFrostFS struct {
 	pool *pool.Pool
 }
 
-// NewResolverNeoFS creates new ResolverNeoFS using provided pool.Pool.
-func NewResolverNeoFS(p *pool.Pool) *ResolverNeoFS {
-	return &ResolverNeoFS{pool: p}
+// NewResolverFrostFS creates new ResolverFrostFS using provided pool.Pool.
+func NewResolverFrostFS(p *pool.Pool) *ResolverFrostFS {
+	return &ResolverFrostFS{pool: p}
 }
 
-// SystemDNS implements resolver.NeoFS interface method.
-func (x *ResolverNeoFS) SystemDNS(ctx context.Context) (string, error) {
+// SystemDNS implements resolver.FrostFS interface method.
+func (x *ResolverFrostFS) SystemDNS(ctx context.Context) (string, error) {
 	networkInfo, err := x.pool.NetworkInfo(ctx)
 	if err != nil {
 		return "", fmt.Errorf("read network info via client: %w", err)
@@ -477,19 +477,19 @@ func (x *ResolverNeoFS) SystemDNS(ctx context.Context) (string, error) {
 	return string(domain), nil
 }
 
-// AuthmateNeoFS is a mediator which implements authmate.NeoFS through pool.Pool.
-type AuthmateNeoFS struct {
-	neoFS *NeoFS
+// AuthmateFrostFS is a mediator which implements authmate.FrostFS through pool.Pool.
+type AuthmateFrostFS struct {
+	frostFS *FrostFS
 }
 
-// NewAuthmateNeoFS creates new AuthmateNeoFS using provided pool.Pool.
-func NewAuthmateNeoFS(p *pool.Pool) *AuthmateNeoFS {
-	return &AuthmateNeoFS{neoFS: NewNeoFS(p)}
+// NewAuthmateFrostFS creates new AuthmateFrostFS using provided pool.Pool.
+func NewAuthmateFrostFS(p *pool.Pool) *AuthmateFrostFS {
+	return &AuthmateFrostFS{frostFS: NewFrostFS(p)}
 }
 
-// ContainerExists implements authmate.NeoFS interface method.
-func (x *AuthmateNeoFS) ContainerExists(ctx context.Context, idCnr cid.ID) error {
-	_, err := x.neoFS.Container(ctx, idCnr)
+// ContainerExists implements authmate.FrostFS interface method.
+func (x *AuthmateFrostFS) ContainerExists(ctx context.Context, idCnr cid.ID) error {
+	_, err := x.frostFS.Container(ctx, idCnr)
 	if err != nil {
 		return fmt.Errorf("get container via connection pool: %w", err)
 	}
@@ -497,18 +497,18 @@ func (x *AuthmateNeoFS) ContainerExists(ctx context.Context, idCnr cid.ID) error
 	return nil
 }
 
-// TimeToEpoch implements authmate.NeoFS interface method.
-func (x *AuthmateNeoFS) TimeToEpoch(ctx context.Context, futureTime time.Time) (uint64, uint64, error) {
-	return x.neoFS.TimeToEpoch(ctx, time.Now(), futureTime)
+// TimeToEpoch implements authmate.FrostFS interface method.
+func (x *AuthmateFrostFS) TimeToEpoch(ctx context.Context, futureTime time.Time) (uint64, uint64, error) {
+	return x.frostFS.TimeToEpoch(ctx, time.Now(), futureTime)
 }
 
-// CreateContainer implements authmate.NeoFS interface method.
-func (x *AuthmateNeoFS) CreateContainer(ctx context.Context, prm authmate.PrmContainerCreate) (cid.ID, error) {
+// CreateContainer implements authmate.FrostFS interface method.
+func (x *AuthmateFrostFS) CreateContainer(ctx context.Context, prm authmate.PrmContainerCreate) (cid.ID, error) {
 	basicACL := acl.Private
 	// allow reading objects to OTHERS in order to provide read access to S3 gateways
 	basicACL.AllowOp(acl.OpObjectGet, acl.RoleOthers)
 
-	return x.neoFS.CreateContainer(ctx, layer.PrmContainerCreate{
+	return x.frostFS.CreateContainer(ctx, layer.PrmContainerCreate{
 		Creator:  prm.Owner,
 		Policy:   prm.Policy,
 		Name:     prm.FriendlyName,
@@ -516,9 +516,9 @@ func (x *AuthmateNeoFS) CreateContainer(ctx context.Context, prm authmate.PrmCon
 	})
 }
 
-// ReadObjectPayload implements authmate.NeoFS interface method.
-func (x *AuthmateNeoFS) ReadObjectPayload(ctx context.Context, addr oid.Address) ([]byte, error) {
-	res, err := x.neoFS.ReadObject(ctx, layer.PrmObjectRead{
+// ReadObjectPayload implements authmate.FrostFS interface method.
+func (x *AuthmateFrostFS) ReadObjectPayload(ctx context.Context, addr oid.Address) ([]byte, error) {
+	res, err := x.frostFS.ReadObject(ctx, layer.PrmObjectRead{
 		Container:   addr.Container(),
 		Object:      addr.Object(),
 		WithPayload: true,
@@ -532,9 +532,9 @@ func (x *AuthmateNeoFS) ReadObjectPayload(ctx context.Context, addr oid.Address)
 	return io.ReadAll(res.Payload)
 }
 
-// CreateObject implements authmate.NeoFS interface method.
-func (x *AuthmateNeoFS) CreateObject(ctx context.Context, prm tokens.PrmObjectCreate) (oid.ID, error) {
-	return x.neoFS.CreateObject(ctx, layer.PrmObjectCreate{
+// CreateObject implements authmate.FrostFS interface method.
+func (x *AuthmateFrostFS) CreateObject(ctx context.Context, prm tokens.PrmObjectCreate) (oid.ID, error) {
+	return x.frostFS.CreateObject(ctx, layer.PrmObjectCreate{
 		Creator:   prm.Creator,
 		Container: prm.Container,
 		Filepath:  prm.Filepath,
@@ -544,7 +544,7 @@ func (x *AuthmateNeoFS) CreateObject(ctx context.Context, prm tokens.PrmObjectCr
 	})
 }
 
-// PoolStatistic is a mediator which implements authmate.NeoFS through pool.Pool.
+// PoolStatistic is a mediator which implements authmate.FrostFS through pool.Pool.
 type PoolStatistic struct {
 	pool *pool.Pool
 }

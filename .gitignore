@@ -3,7 +3,7 @@
 .vscode
 
 # Tree service
-internal/neofs/services/tree/
+internal/frostfs/services/tree/
 
 # Vendoring
 vendor

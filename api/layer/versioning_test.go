@@ -113,7 +113,7 @@ func (tc *testContext) checkListObjects(ids ...oid.ID) {
 }
 
 func (tc *testContext) getObjectByID(objID oid.ID) *object.Object {
-	for _, obj := range tc.testNeoFS.Objects() {
+	for _, obj := range tc.testFrostFS.Objects() {
 		id, _ := obj.ID()
 		if id.Equals(objID) {
 			return obj
@@ -123,12 +123,12 @@ func (tc *testContext) getObjectByID(objID oid.ID) *object.Object {
 }
 
 type testContext struct {
-	t         *testing.T
-	ctx       context.Context
-	layer     Client
-	bktInfo   *data.BucketInfo
-	obj       string
-	testNeoFS *TestNeoFS
+	t           *testing.T
+	ctx         context.Context
+	layer       Client
+	bktInfo     *data.BucketInfo
+	obj         string
+	testFrostFS *TestFrostFS
 }
 
 func prepareContext(t *testing.T, cachesConfig ...*CachesConfig) *testContext {
@@ -146,7 +146,7 @@ func prepareContext(t *testing.T, cachesConfig ...*CachesConfig) *testContext {
 			GateKey:     key.PublicKey(),
 		},
 	})
-	tp := NewTestNeoFS()
+	tp := NewTestFrostFS()
 
 	bktName := "testbucket1"
 	bktID, err := tp.CreateContainer(ctx, PrmContainerCreate{
@@ -176,9 +176,9 @@ func prepareContext(t *testing.T, cachesConfig ...*CachesConfig) *testContext {
 			Owner: owner,
 			CID:   bktID,
 		},
-		obj:       "obj1",
-		t:         t,
-		testNeoFS: tp,
+		obj:         "obj1",
+		t:           t,
+		testFrostFS: tp,
 	}
 }
 

@@ -24,7 +24,7 @@ type TreeService interface {
 	GetNotificationConfigurationNode(ctx context.Context, bktInfo *data.BucketInfo) (oid.ID, error)
 
 	// PutNotificationConfigurationNode puts a node to a system tree
-	// and returns objectID of a previous notif config which must be deleted in NeoFS.
+	// and returns objectID of a previous notif config which must be deleted in FrostFS.
 	//
 	// If object id to remove is not found returns ErrNoNodeToRemove error.
 	PutNotificationConfigurationNode(ctx context.Context, bktInfo *data.BucketInfo, objID oid.ID) (oid.ID, error)
@@ -34,12 +34,12 @@ type TreeService interface {
 	// If object id is not found returns ErrNodeNotFound error.
 	GetBucketCORS(ctx context.Context, bktInfo *data.BucketInfo) (oid.ID, error)
 
-	// PutBucketCORS puts a node to a system tree and returns objectID of a previous cors config which must be deleted in NeoFS.
+	// PutBucketCORS puts a node to a system tree and returns objectID of a previous cors config which must be deleted in FrostFS.
 	//
 	// If object id to remove is not found returns ErrNoNodeToRemove error.
 	PutBucketCORS(ctx context.Context, bktInfo *data.BucketInfo, objID oid.ID) (oid.ID, error)
 
-	// DeleteBucketCORS removes a node from a system tree and returns objID which must be deleted in NeoFS.
+	// DeleteBucketCORS removes a node from a system tree and returns objID which must be deleted in FrostFS.
 	//
 	// If object id to remove is not found returns ErrNoNodeToRemove error.
 	DeleteBucketCORS(ctx context.Context, bktInfo *data.BucketInfo) (oid.ID, error)
@@ -69,7 +69,7 @@ type TreeService interface {
 	GetMultipartUpload(ctx context.Context, bktInfo *data.BucketInfo, objectName, uploadID string) (*data.MultipartInfo, error)
 
 	// AddPart puts a node to a system tree as a child of appropriate multipart upload
-	// and returns objectID of a previous part which must be deleted in NeoFS.
+	// and returns objectID of a previous part which must be deleted in FrostFS.
 	//
 	// If object id to remove is not found returns ErrNoNodeToRemove error.
 	AddPart(ctx context.Context, bktInfo *data.BucketInfo, multipartNodeID uint64, info *data.PartInfo) (oldObjIDToDelete oid.ID, err error)

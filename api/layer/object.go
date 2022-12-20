@@ -90,7 +90,7 @@ func (n *layer) objectHead(ctx context.Context, bktInfo *data.BucketInfo, idObj 
 
 	n.prepareAuthParameters(ctx, &prm.PrmAuth, bktInfo.Owner)
 
-	res, err := n.neoFS.ReadObject(ctx, prm)
+	res, err := n.frostFS.ReadObject(ctx, prm)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (n *layer) objectHead(ctx context.Context, bktInfo *data.BucketInfo, idObj 
 	return res.Head, nil
 }
 
-// initializes payload reader of the NeoFS object.
+// initializes payload reader of the FrostFS object.
 // Zero range corresponds to full payload (panics if only offset is set).
 func (n *layer) initObjectPayloadReader(ctx context.Context, p getParams) (io.Reader, error) {
 	prm := PrmObjectRead{
@@ -110,7 +110,7 @@ func (n *layer) initObjectPayloadReader(ctx context.Context, p getParams) (io.Re
 
 	n.prepareAuthParameters(ctx, &prm.PrmAuth, p.bktInfo.Owner)
 
-	res, err := n.neoFS.ReadObject(ctx, prm)
+	res, err := n.frostFS.ReadObject(ctx, prm)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func (n *layer) objectGet(ctx context.Context, bktInfo *data.BucketInfo, objID o
 
 	n.prepareAuthParameters(ctx, &prm.PrmAuth, bktInfo.Owner)
 
-	res, err := n.neoFS.ReadObject(ctx, prm)
+	res, err := n.frostFS.ReadObject(ctx, prm)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +182,7 @@ func ParseCompletedPartHeader(hdr string) (*Part, error) {
 	}, nil
 }
 
-// PutObject stores object into NeoFS, took payload from io.Reader.
+// PutObject stores object into FrostFS, took payload from io.Reader.
 func (n *layer) PutObject(ctx context.Context, p *PutObjectParams) (*data.ExtendedObjectInfo, error) {
 	owner := n.Owner(ctx)
 
@@ -383,7 +383,7 @@ func (n *layer) headVersion(ctx context.Context, bkt *data.BucketInfo, p *HeadOb
 	return extObjInfo, nil
 }
 
-// objectDelete puts tombstone object into neofs.
+// objectDelete puts tombstone object into frostfs.
 func (n *layer) objectDelete(ctx context.Context, bktInfo *data.BucketInfo, idObj oid.ID) error {
 	prm := PrmObjectDelete{
 		Container: bktInfo.CID,
@@ -394,10 +394,10 @@ func (n *layer) objectDelete(ctx context.Context, bktInfo *data.BucketInfo, idOb
 
 	n.cache.DeleteObject(newAddress(bktInfo.CID, idObj))
 
-	return n.neoFS.DeleteObject(ctx, prm)
+	return n.frostFS.DeleteObject(ctx, prm)
 }
 
-// objectPutAndHash prepare auth parameters and invoke neofs.CreateObject.
+// objectPutAndHash prepare auth parameters and invoke frostfs.CreateObject.
 // Returns object ID and payload sha256 hash.
 func (n *layer) objectPutAndHash(ctx context.Context, prm PrmObjectCreate, bktInfo *data.BucketInfo) (oid.ID, []byte, error) {
 	n.prepareAuthParameters(ctx, &prm.PrmAuth, bktInfo.Owner)
@@ -405,7 +405,7 @@ func (n *layer) objectPutAndHash(ctx context.Context, prm PrmObjectCreate, bktIn
 	prm.Payload = wrapReader(prm.Payload, 64*1024, func(buf []byte) {
 		hash.Write(buf)
 	})
-	id, err := n.neoFS.CreateObject(ctx, prm)
+	id, err := n.frostFS.CreateObject(ctx, prm)
 	if err != nil {
 		return oid.ID{}, nil, err
 	}
@@ -577,10 +577,10 @@ func (n *layer) initWorkerPool(ctx context.Context, size int, p allObjectParams,
 				wg.Add(1)
 				err = pool.Submit(func() {
 					defer wg.Done()
-					oi := n.objectInfoFromObjectsCacheOrNeoFS(ctx, p.Bucket, node, p.Prefix, p.Delimiter)
+					oi := n.objectInfoFromObjectsCacheOrFrostFS(ctx, p.Bucket, node, p.Prefix, p.Delimiter)
 					if oi == nil {
 						// try to get object again
-						if oi = n.objectInfoFromObjectsCacheOrNeoFS(ctx, p.Bucket, node, p.Prefix, p.Delimiter); oi == nil {
+						if oi = n.objectInfoFromObjectsCacheOrFrostFS(ctx, p.Bucket, node, p.Prefix, p.Delimiter); oi == nil {
 							// form object info with data that the tree node contains
 							oi = getPartialObjectInfo(p.Bucket, node)
 						}
@@ -646,14 +646,14 @@ func (n *layer) getAllObjectsVersions(ctx context.Context, bkt *data.BucketInfo,
 	for _, nodeVersion := range nodeVersions {
 		oi := &data.ObjectInfo{}
 
-		if nodeVersion.IsDeleteMarker() { // delete marker does not match any object in NeoFS
+		if nodeVersion.IsDeleteMarker() { // delete marker does not match any object in FrostFS
 			oi.ID = nodeVersion.OID
 			oi.Name = nodeVersion.FilePath
 			oi.Owner = nodeVersion.DeleteMarker.Owner
 			oi.Created = nodeVersion.DeleteMarker.Created
 			oi.IsDeleteMarker = true
 		} else {
-			if oi = n.objectInfoFromObjectsCacheOrNeoFS(ctx, bkt, nodeVersion, prefix, delimiter); oi == nil {
+			if oi = n.objectInfoFromObjectsCacheOrFrostFS(ctx, bkt, nodeVersion, prefix, delimiter); oi == nil {
 				continue
 			}
 		}
@@ -677,7 +677,7 @@ func (n *layer) getAllObjectsVersions(ctx context.Context, bkt *data.BucketInfo,
 
 func IsSystemHeader(key string) bool {
 	_, ok := api.SystemMetadata[key]
-	return ok || strings.HasPrefix(key, api.NeoFSSystemMetadataPrefix)
+	return ok || strings.HasPrefix(key, api.FrostFSSystemMetadataPrefix)
 }
 
 func shouldSkip(node *data.NodeVersion, p allObjectParams, existed map[string]struct{}) bool {
@@ -734,7 +734,7 @@ func triageExtendedObjects(allObjects []*data.ExtendedObjectInfo) (prefixes []st
 	return
 }
 
-func (n *layer) objectInfoFromObjectsCacheOrNeoFS(ctx context.Context, bktInfo *data.BucketInfo, node *data.NodeVersion, prefix, delimiter string) (oi *data.ObjectInfo) {
+func (n *layer) objectInfoFromObjectsCacheOrFrostFS(ctx context.Context, bktInfo *data.BucketInfo, node *data.NodeVersion, prefix, delimiter string) (oi *data.ObjectInfo) {
 	if oiDir := tryDirectory(bktInfo, node, prefix, delimiter); oiDir != nil {
 		return oiDir
 	}

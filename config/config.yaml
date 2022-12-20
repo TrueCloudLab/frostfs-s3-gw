@@ -5,23 +5,23 @@ wallet:
   address: NfgHwwTi3wHAS8aFAN243C5vGbkYDpqLHP # Account address. If omitted default one will be used.
 
 # Nodes configuration
-# This configuration makes the gateway use the first node (grpc://s01.neofs.devenv:8080)
-# while it's healthy. Otherwise, gateway uses the second node (grpc://s01.neofs.devenv:8080)
-# for 10% of requests and the third node (grpc://s03.neofs.devenv:8080) for 90% of requests.
+# This configuration makes the gateway use the first node (grpc://s01.frostfs.devenv:8080)
+# while it's healthy. Otherwise, gateway uses the second node (grpc://s01.frostfs.devenv:8080)
+# for 10% of requests and the third node (grpc://s03.frostfs.devenv:8080) for 90% of requests.
 # Until nodes with the same priority level are healthy
 # nodes with other priority are not used.
 # The lower the value, the higher the priority.
 peers:
   0:
-    address: node1.neofs:8080
+    address: node1.frostfs:8080
     priority: 1
     weight: 1
   1:
-    address: node2.neofs:8080
+    address: node2.frostfs:8080
     priority: 2
     weight: 0.1
   2:
-    address: node3.neofs:8080
+    address: node3.frostfs:8080
     priority: 2
     weight: 0.9
 
@@ -39,17 +39,17 @@ server:
 
 # Domains to be able to use virtual-hosted-style access to bucket.
 listen_domains:
-  - s3dev.neofs.devenv
+  - s3dev.frostfs.devenv
 
 logger:
   level: debug
 
 # Endpoint of the tree service. Must be provided. Can be one of the node address (from the `peers` section).
 tree:
-  service: node1.neofs:8080
+  service: node1.frostfs:8080
 
 # RPC endpoint and order of resolving of bucket names
-rpc_endpoint: http://morph-chain.neofs.devenv:30333
+rpc_endpoint: http://morph-chain.frostfs.devenv:30333
 resolve_order:
   - nns
 
@@ -118,10 +118,10 @@ nats:
   key_file: /path/to/key
   root_ca: /path/to/ca
 
-# Parameters of NeoFS container placement policy
+# Parameters of FrostFS container placement policy
 placement_policy:
-  # Default policy of placing containers in NeoFS
-  # If a user sends a request `CreateBucket` and doesn't define policy for placing of a container in NeoFS, the S3 Gateway
+  # Default policy of placing containers in FrostFS
+  # If a user sends a request `CreateBucket` and doesn't define policy for placing of a container in FrostFS, the S3 Gateway
   # will put the container with default policy.
   default: REP 3
   # Region to placement policy mapping json file.
@@ -133,9 +133,9 @@ placement_policy:
 cors:
   default_max_age: 600
 
-# Parameters of requests to NeoFS
-neofs:
-  # Number of the object copies to consider PUT to NeoFS successful.
+# Parameters of requests to FrostFS
+frostfs:
+  # Number of the object copies to consider PUT to FrostFS successful.
   # `0` means that object will be processed according to the container's placement policy
   set_copies_number: 0
 

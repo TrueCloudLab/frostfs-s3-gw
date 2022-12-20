@@ -55,22 +55,22 @@ var (
 	httpStatsMetric      = new(HTTPStats)
 	httpRequestsDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "neofs_s3_request_seconds",
-			Help:    "Time taken by requests served by current NeoFS S3 Gate instance",
+			Name:    "frostfs_s3_request_seconds",
+			Help:    "Time taken by requests served by current FrostFS S3 Gate instance",
 			Buckets: []float64{.05, .1, .25, .5, 1, 2.5, 5, 10},
 		},
 		[]string{"api"},
 	)
 )
 
-// Collects HTTP metrics for NeoFS S3 Gate in Prometheus specific format
+// Collects HTTP metrics for FrostFS S3 Gate in Prometheus specific format
 // and sends to the given channel.
 func collectHTTPMetrics(ch chan<- prometheus.Metric) {
 	for api, value := range httpStatsMetric.currentS3Requests.Load() {
 		ch <- prometheus.MustNewConstMetric(
 			prometheus.NewDesc(
-				prometheus.BuildFQName("neofs_s3", "requests", "current"),
-				"Total number of running s3 requests in current NeoFS S3 Gate instance",
+				prometheus.BuildFQName("frostfs_s3", "requests", "current"),
+				"Total number of running s3 requests in current FrostFS S3 Gate instance",
 				[]string{"api"}, nil),
 			prometheus.CounterValue,
 			float64(value),
@@ -81,8 +81,8 @@ func collectHTTPMetrics(ch chan<- prometheus.Metric) {
 	for api, value := range httpStatsMetric.totalS3Requests.Load() {
 		ch <- prometheus.MustNewConstMetric(
 			prometheus.NewDesc(
-				prometheus.BuildFQName("neofs_s3", "requests", "total"),
-				"Total number of s3 requests in current NeoFS S3 Gate instance",
+				prometheus.BuildFQName("frostfs_s3", "requests", "total"),
+				"Total number of s3 requests in current FrostFS S3 Gate instance",
 				[]string{"api"}, nil),
 			prometheus.CounterValue,
 			float64(value),
@@ -93,8 +93,8 @@ func collectHTTPMetrics(ch chan<- prometheus.Metric) {
 	for api, value := range httpStatsMetric.totalS3Errors.Load() {
 		ch <- prometheus.MustNewConstMetric(
 			prometheus.NewDesc(
-				prometheus.BuildFQName("neofs_s3", "errors", "total"),
-				"Total number of s3 errors in current NeoFS S3 Gate instance",
+				prometheus.BuildFQName("frostfs_s3", "errors", "total"),
+				"Total number of s3 errors in current FrostFS S3 Gate instance",
 				[]string{"api"}, nil),
 			prometheus.CounterValue,
 			float64(value),

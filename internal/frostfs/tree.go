@@ -1,4 +1,4 @@
-package neofs
+package frostfs
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
 	"github.com/TrueCloudLab/frostfs-s3-gw/api/layer"
 	"github.com/TrueCloudLab/frostfs-s3-gw/creds/accessbox"
-	"github.com/TrueCloudLab/frostfs-s3-gw/internal/neofs/services/tree"
+	"github.com/TrueCloudLab/frostfs-s3-gw/internal/frostfs/services/tree"
 	"github.com/TrueCloudLab/frostfs-sdk-go/bearer"
 	oid "github.com/TrueCloudLab/frostfs-sdk-go/object/id"
 	"github.com/TrueCloudLab/frostfs-sdk-go/user"
