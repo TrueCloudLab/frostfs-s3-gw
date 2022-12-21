@@ -52,13 +52,6 @@ func (h *handler) PutObjectTaggingHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	h.log.Debug("target details",
-		zap.String("reqId", reqInfo.RequestID),
-		zap.String("bucket", reqInfo.BucketName),
-		zap.Stringer("cid", bktInfo.CID),
-		zap.String("object", reqInfo.ObjectName),
-		zap.Stringer("oid", nodeVersion.OID))
-
 	s := &SendNotificationParams{
 		Event: EventObjectTaggingPut,
 		NotificationInfo: &data.NotificationInfo{
@@ -106,13 +99,6 @@ func (h *handler) GetObjectTaggingHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	h.log.Debug("target details",
-		zap.String("reqId", reqInfo.RequestID),
-		zap.String("bucket", reqInfo.BucketName),
-		zap.Stringer("cid", bktInfo.CID),
-		zap.String("object", reqInfo.ObjectName),
-		zap.String("oid", versionID))
-
 	if settings.VersioningEnabled() {
 		w.Header().Set(api.AmzVersionID, versionID)
 	}
@@ -141,13 +127,6 @@ func (h *handler) DeleteObjectTaggingHandler(w http.ResponseWriter, r *http.Requ
 		h.logAndSendError(w, "could not delete object tagging", reqInfo, err)
 		return
 	}
-
-	h.log.Debug("target details",
-		zap.String("reqId", reqInfo.RequestID),
-		zap.String("bucket", reqInfo.BucketName),
-		zap.Stringer("cid", bktInfo.CID),
-		zap.String("object", reqInfo.ObjectName),
-		zap.Stringer("oid", nodeVersion.OID))
 
 	s := &SendNotificationParams{
 		Event: EventObjectTaggingDelete,

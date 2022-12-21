@@ -543,11 +543,6 @@ func (n *layer) AbortMultipartUpload(ctx context.Context, p *UploadInfoParams) e
 	}
 
 	for _, info := range parts {
-		reqInfo := api.GetReqInfo(ctx)
-		n.log.Debug("part details",
-			zap.String("reqId", reqInfo.RequestID),
-			zap.String("bucket", p.Bkt.Name), zap.Stringer("cid", p.Bkt.CID),
-			zap.String("object", info.Key), zap.Stringer("oid", info.OID))
 		if err = n.objectDelete(ctx, p.Bkt, info.OID); err != nil {
 			n.log.Warn("couldn't delete part", zap.String("cid", p.Bkt.CID.EncodeToString()),
 				zap.String("oid", info.OID.EncodeToString()), zap.Int("part number", info.Number), zap.Error(err))
@@ -575,11 +570,6 @@ func (n *layer) ListParts(ctx context.Context, p *ListPartsParams) (*ListPartsIn
 	parts := make([]*Part, 0, len(partsInfo))
 
 	for _, partInfo := range partsInfo {
-		reqInfo := api.GetReqInfo(ctx)
-		n.log.Debug("part details",
-			zap.String("reqId", reqInfo.RequestID),
-			zap.String("container", p.Info.Bkt.Name), zap.Stringer("cid", p.Info.Bkt.CID),
-			zap.String("object", partInfo.Key), zap.Stringer("oid", partInfo.OID))
 		parts = append(parts, &Part{
 			ETag:         partInfo.ETag,
 			LastModified: partInfo.Created.UTC().Format(time.RFC3339),
