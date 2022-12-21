@@ -730,8 +730,8 @@ func (h *handler) CreateBucketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.log.Debug("target details", zap.String("reqId", reqInfo.RequestID),
-		zap.String("bucket", reqInfo.BucketName), zap.Stringer("cid", bktInfo.CID))
+	h.log.Info("bucket is created", zap.String("reqId", reqInfo.RequestID),
+		zap.String("bucket", reqInfo.BucketName), zap.Stringer("container_id", bktInfo.CID))
 
 	if p.ObjectLockEnabled {
 		sp := &layer.PutSettingsParams{
@@ -744,8 +744,6 @@ func (h *handler) CreateBucketHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-
-	h.log.Info("bucket is created", zap.Stringer("container_id", bktInfo.CID))
 
 	api.WriteSuccessResponseHeadersOnly(w)
 }
