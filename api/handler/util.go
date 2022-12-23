@@ -42,6 +42,10 @@ func transformToS3Error(err error) error {
 	return errors.GetAPIError(errors.ErrInternalError)
 }
 
+func (h *handler) ResolveBucket(ctx context.Context, bucket string) (*data.BucketInfo, error) {
+	return h.obj.GetBucketInfo(ctx, bucket)
+}
+
 func (h *handler) getBucketAndCheckOwner(r *http.Request, bucket string, header ...string) (*data.BucketInfo, error) {
 	bktInfo, err := h.obj.GetBucketInfo(r.Context(), bucket)
 	if err != nil {
