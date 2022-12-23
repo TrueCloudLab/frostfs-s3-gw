@@ -1,4 +1,4 @@
-package metrics
+package api
 
 import (
 	"io"
@@ -8,8 +8,69 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/TrueCloudLab/frostfs-s3-gw/creds/accessbox"
+	"github.com/TrueCloudLab/frostfs-sdk-go/bearer"
 	"github.com/prometheus/client_golang/prometheus"
 )
+
+type RequestType int
+
+const (
+	HEADRequest   RequestType = iota
+	PUTRequest    RequestType = iota
+	LISTRequest   RequestType = iota
+	GETRequest    RequestType = iota
+	DELETERequest RequestType = iota
+)
+
+func (t RequestType) String() string {
+	switch t {
+	case 0:
+		return "HEAD"
+	case 1:
+		return "PUT"
+	case 2:
+		return "LIST"
+	case 3:
+		return "GET"
+	case 4:
+		return "DELETE"
+	default:
+		return "Unknown"
+	}
+}
+
+func RequestTypeFromAPI(api string) RequestType {
+	switch api {
+	case "headobject", "headbucket":
+		return HEADRequest
+	case "createmultipartupload", "uploadpartcopy", "uploadpart", "completemutipartupload",
+		"putobjectacl", "putobjecttagging", "copyobject", "putobjectretention", "putobjectlegalhold",
+		"putobject", "putbucketcors", "putbucketacl", "putbucketlifecycle", "putbucketencryption",
+		"putbucketpolicy", "putbucketobjectlockconfig", "putbuckettagging", "putbucketversioning",
+		"putbucketnotification", "createbucket", "postobject":
+		return PUTRequest
+	case "listmultipartuploads", "listobjectsv2M", "listobjectsv2", "listbucketversions",
+		"listobjectsv1", "listbuckets":
+		return LISTRequest
+	case "getobjectacl", "getobjecttagging", "getobjectretention", "getobjectlegalhold",
+		"getobjectattributes", "getobject", "getbucketlocation", "getbucketpolicy",
+		"getbucketlifecycle", "getbucketencryption", "getbucketcors", "getbucketacl",
+		"getbucketwebsite", "getbucketaccelerate", "getbucketrequestpayment", "getbucketlogging",
+		"getbucketreplication", "getbuckettagging", "selectobjectcontent",
+		"getbucketobjectlockconfiguration", "getbucketversioning", "getbucketnotification",
+		"listenbucketnotification":
+		return GETRequest
+	case "abortmultipartupload", "deleteobjecttagging", "deleteobject", "deletebucketcors",
+		"deletebucketwebsite", "deletebuckettagging", "deletemultipleobjects", "deletebucketpolicy",
+		"deletebucketlifecycle", "deletebucketencryption", "deletebucket":
+		return DELETERequest
+	default:
+		return RequestType(-1)
+	}
+}
+
+type OperationList [5]int
 
 type (
 	// HTTPAPIStats holds statistics information about
@@ -19,9 +80,25 @@ type (
 		sync.RWMutex
 	}
 
+	UsersAPIStats struct {
+		users map[string]*userAPIStats
+		sync.RWMutex
+	}
+
+	bucketKey struct {
+		name string
+		cid  string
+	}
+
+	userAPIStats struct {
+		buckets map[bucketKey]OperationList
+		user    string
+	}
+
 	// HTTPStats holds statistics information about
 	// HTTP requests made by all clients.
 	HTTPStats struct {
+		usersS3Requests   UsersAPIStats
 		currentS3Requests HTTPAPIStats
 		totalS3Requests   HTTPAPIStats
 		totalS3Errors     HTTPAPIStats
@@ -101,6 +178,21 @@ func collectHTTPMetrics(ch chan<- prometheus.Metric) {
 			api,
 		)
 	}
+
+	for _, value := range httpStatsMetric.usersS3Requests.DumpMetrics() {
+		ch <- prometheus.MustNewConstMetric(
+			prometheus.NewDesc(
+				prometheus.BuildFQName("frostfs_s3", "user_requests", "count"),
+				"",
+				[]string{"user", "bucket", "cid", "operation"}, nil),
+			prometheus.CounterValue,
+			float64(value.Requests),
+			value.User,
+			value.Bucket,
+			value.ContainerID,
+			value.Operation,
+		)
+	}
 }
 
 // APIStats wraps http handler for api with basic statistics collection.
@@ -169,6 +261,66 @@ func (stats *HTTPAPIStats) Load() map[string]int {
 	return apiStats
 }
 
+func (u *UsersAPIStats) Update(user, bucket, cnrID string, reqType RequestType) {
+	u.Lock()
+	defer u.Unlock()
+
+	usersStat := u.users[user]
+	if usersStat == nil {
+		if u.users == nil {
+			u.users = make(map[string]*userAPIStats)
+		}
+		usersStat = &userAPIStats{
+			buckets: make(map[bucketKey]OperationList, 1),
+			user:    user,
+		}
+		u.users[user] = usersStat
+	}
+
+	key := bucketKey{
+		name: bucket,
+		cid:  cnrID,
+	}
+
+	bucketStat := usersStat.buckets[key]
+	bucketStat[reqType] += 1
+	usersStat.buckets[key] = bucketStat
+}
+
+type UserMetricsInfo struct {
+	User        string
+	Bucket      string
+	ContainerID string
+	Operation   string
+	Requests    int
+}
+
+func (u *UsersAPIStats) DumpMetrics() []UserMetricsInfo {
+	u.Lock()
+	defer u.Unlock()
+
+	result := make([]UserMetricsInfo, 0, len(u.users))
+	for user, userStat := range u.users {
+		for key, operations := range userStat.buckets {
+			for op, val := range operations {
+				if val != 0 {
+					result = append(result, UserMetricsInfo{
+						User:        user,
+						Bucket:      key.name,
+						ContainerID: key.cid,
+						Operation:   RequestType(op).String(),
+						Requests:    val,
+					})
+				}
+			}
+		}
+	}
+
+	u.users = make(map[string]*userAPIStats)
+
+	return result
+}
+
 func (st *HTTPStats) getInputBytes() uint64 {
 	return atomic.LoadUint64(&st.totalInputBytes)
 }
@@ -178,26 +330,36 @@ func (st *HTTPStats) getOutputBytes() uint64 {
 }
 
 // Update statistics from http request and response data.
-func (st *HTTPStats) updateStats(api string, w http.ResponseWriter, r *http.Request, durationSecs float64) {
+func (st *HTTPStats) updateStats(apiOperation string, w http.ResponseWriter, r *http.Request, durationSecs float64) {
 	var code int
 
 	if res, ok := w.(*responseWrapper); ok {
 		code = res.statusCode
 	}
 
+	user := "anon"
+	if bd, ok := r.Context().Value(BoxData).(*accessbox.Box); ok && bd != nil && bd.Gate != nil && bd.Gate.BearerToken != nil {
+		user = bearer.ResolveIssuer(*bd.Gate.BearerToken).String()
+	}
+
+	reqInfo := GetReqInfo(r.Context())
+	cnrID := GetCID(r.Context())
+
+	st.usersS3Requests.Update(user, reqInfo.BucketName, cnrID, RequestTypeFromAPI(apiOperation))
+
 	// A successful request has a 2xx response code
 	successReq := code >= http.StatusOK && code < http.StatusMultipleChoices
 
 	if !strings.HasSuffix(r.URL.Path, systemPath) {
-		st.totalS3Requests.Inc(api)
+		st.totalS3Requests.Inc(apiOperation)
 		if !successReq && code != 0 {
-			st.totalS3Errors.Inc(api)
+			st.totalS3Errors.Inc(apiOperation)
 		}
 	}
 
 	if r.Method == http.MethodGet {
 		// Increment the prometheus http request response histogram with appropriate label
-		httpRequestsDuration.With(prometheus.Labels{"api": api}).Observe(durationSecs)
+		httpRequestsDuration.With(prometheus.Labels{"api": apiOperation}).Observe(durationSecs)
 	}
 }
 

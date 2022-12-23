@@ -1,4 +1,4 @@
-package metrics
+package api
 
 import (
 	"github.com/TrueCloudLab/frostfs-s3-gw/internal/version"
