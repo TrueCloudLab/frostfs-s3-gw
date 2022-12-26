@@ -152,7 +152,7 @@ func resolveBucket(log *zap.Logger, resolveBucket func(ctx context.Context, buck
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			reqInfo := GetReqInfo(r.Context())
 
-			if reqInfo.BucketName != "" {
+			if reqInfo.BucketName != "" && reqInfo.API != "CreateBucket" {
 				bktInfo, err := resolveBucket(r.Context(), reqInfo.BucketName)
 				if err != nil {
 					code := WriteErrorResponse(w, reqInfo, err)
