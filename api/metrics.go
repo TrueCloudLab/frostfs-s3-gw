@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"strings"
@@ -35,24 +36,25 @@ func (t TrafficType) String() string {
 type RequestType int
 
 const (
-	HEADRequest   RequestType = iota
-	PUTRequest    RequestType = iota
-	LISTRequest   RequestType = iota
-	GETRequest    RequestType = iota
-	DELETERequest RequestType = iota
+	UNKNOWNRequest RequestType = iota
+	HEADRequest    RequestType = iota
+	PUTRequest     RequestType = iota
+	LISTRequest    RequestType = iota
+	GETRequest     RequestType = iota
+	DELETERequest  RequestType = iota
 )
 
 func (t RequestType) String() string {
 	switch t {
-	case 0:
-		return "HEAD"
 	case 1:
-		return "PUT"
+		return "HEAD"
 	case 2:
-		return "LIST"
+		return "PUT"
 	case 3:
-		return "GET"
+		return "LIST"
 	case 4:
+		return "GET"
+	case 5:
 		return "DELETE"
 	default:
 		return "Unknown"
@@ -61,35 +63,34 @@ func (t RequestType) String() string {
 
 func RequestTypeFromAPI(api string) RequestType {
 	switch api {
-	case "headobject", "headbucket":
+	case "Options", "HeadObject", "HeadBucket":
 		return HEADRequest
-	case "createmultipartupload", "uploadpartcopy", "uploadpart", "completemutipartupload",
-		"putobjectacl", "putobjecttagging", "copyobject", "putobjectretention", "putobjectlegalhold",
-		"putobject", "putbucketcors", "putbucketacl", "putbucketlifecycle", "putbucketencryption",
-		"putbucketpolicy", "putbucketobjectlockconfig", "putbuckettagging", "putbucketversioning",
-		"putbucketnotification", "createbucket", "postobject":
+	case "CreateMultipartUpload", "UploadPartCopy", "UploadPart", "CompleteMultipartUpload",
+		"PutObjectACL", "PutObjectTagging", "CopyObject", "PutObjectRetention", "PutObjectLegalHold",
+		"PutObject", "PutBucketCors", "PutBucketACL", "PutBucketLifecycle", "PutBucketEncryption",
+		"PutBucketPolicy", "PutBucketObjectLockConfig", "PutBucketTagging", "PutBucketVersioning",
+		"PutBucketNotification", "CreateBucket", "PostObject":
 		return PUTRequest
-	case "listmultipartuploads", "listobjectsv2M", "listobjectsv2", "listbucketversions",
-		"listobjectsv1", "listbuckets":
+	case "ListObjectParts", "ListMultipartUploads", "ListObjectsV2M", "ListObjectsV2", "ListBucketVersions",
+		"ListObjectsV1", "ListBuckets":
 		return LISTRequest
-	case "getobjectacl", "getobjecttagging", "getobjectretention", "getobjectlegalhold",
-		"getobjectattributes", "getobject", "getbucketlocation", "getbucketpolicy",
-		"getbucketlifecycle", "getbucketencryption", "getbucketcors", "getbucketacl",
-		"getbucketwebsite", "getbucketaccelerate", "getbucketrequestpayment", "getbucketlogging",
-		"getbucketreplication", "getbuckettagging", "selectobjectcontent",
-		"getbucketobjectlockconfiguration", "getbucketversioning", "getbucketnotification",
-		"listenbucketnotification":
+	case "GetObjectACL", "GetObjectTagging", "SelectObjectContent", "GetObjectRetention", "getobjectlegalhold",
+		"GetObjectAttributes", "GetObject", "GetBucketLocation", "GetBucketPolicy",
+		"GetBucketLifecycle", "GetBucketEncryption", "GetBucketCors", "GetBucketACL",
+		"GetBucketWebsite", "GetBucketAccelerate", "GetBucketRequestPayment", "GetBucketLogging",
+		"GetBucketReplication", "GetBucketTagging", "GetBucketObjectLockConfig",
+		"GetBucketVersioning", "GetBucketNotification", "ListenBucketNotification":
 		return GETRequest
-	case "abortmultipartupload", "deleteobjecttagging", "deleteobject", "deletebucketcors",
-		"deletebucketwebsite", "deletebuckettagging", "deletemultipleobjects", "deletebucketpolicy",
-		"deletebucketlifecycle", "deletebucketencryption", "deletebucket":
+	case "AbortMultipartUpload", "DeleteObjectTagging", "DeleteObject", "DeleteBucketCors",
+		"DeleteBucketWebsite", "DeleteBucketTagging", "DeleteMultipleObjects", "DeleteBucketPolicy",
+		"DeleteBucketLifecycle", "DeleteBucketEncryption", "DeleteBucket":
 		return DELETERequest
 	default:
-		return RequestType(-1)
+		return UNKNOWNRequest
 	}
 }
 
-type OperationList [5]int
+type OperationList [6]int
 
 type (
 	// HTTPAPIStats holds statistics information about
@@ -262,11 +263,16 @@ func collectUserMetrics(ch chan<- prometheus.Metric) {
 	}
 }
 
-// APIStats wraps http handler for api with basic statistics collection.
-func APIStats(api string, f http.HandlerFunc) http.HandlerFunc {
+// CIDResolveFunc is a func to resolve CID in Stats handler.
+type CIDResolveFunc func(ctx context.Context, reqInfo *ReqInfo) (cnrID string)
+
+// Stats is a handler that update metrics.
+func Stats(f http.HandlerFunc, resolveCID CIDResolveFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		httpStatsMetric.currentS3Requests.Inc(api)
-		defer httpStatsMetric.currentS3Requests.Dec(api)
+		reqInfo := GetReqInfo(r.Context())
+
+		httpStatsMetric.currentS3Requests.Inc(reqInfo.API)
+		defer httpStatsMetric.currentS3Requests.Dec(reqInfo.API)
 
 		in := &readCounter{ReadCloser: r.Body}
 		out := &writeCounter{ResponseWriter: w}
@@ -278,18 +284,43 @@ func APIStats(api string, f http.HandlerFunc) http.HandlerFunc {
 			startTime:      time.Now(),
 		}
 
-		f.ServeHTTP(statsWriter, r)
+		f(statsWriter, r)
 
 		// Time duration in secs since the call started.
 		// We don't need to do nanosecond precision here
-		// simply for the fact that it is not human readable.
+		// simply for the fact that it is not human-readable.
 		durationSecs := time.Since(statsWriter.startTime).Seconds()
 
-		httpStatsMetric.updateStats(api, statsWriter, r, durationSecs, in.countBytes, out.countBytes)
+		user := resolveUser(r.Context())
+		cnrID := resolveCID(r.Context(), reqInfo)
+		httpStatsMetric.usersS3Requests.Update(user, reqInfo.BucketName, cnrID, RequestTypeFromAPI(reqInfo.API), in.countBytes, out.countBytes)
+
+		code := statsWriter.statusCode
+		// A successful request has a 2xx response code
+		successReq := code >= http.StatusOK && code < http.StatusMultipleChoices
+		if !strings.HasSuffix(r.URL.Path, systemPath) {
+			httpStatsMetric.totalS3Requests.Inc(reqInfo.API)
+			if !successReq && code != 0 {
+				httpStatsMetric.totalS3Errors.Inc(reqInfo.API)
+			}
+		}
+
+		if r.Method == http.MethodGet {
+			// Increment the prometheus http request response histogram with appropriate label
+			httpRequestsDuration.With(prometheus.Labels{"api": reqInfo.API}).Observe(durationSecs)
+		}
 
 		atomic.AddUint64(&httpStatsMetric.totalInputBytes, in.countBytes)
 		atomic.AddUint64(&httpStatsMetric.totalOutputBytes, out.countBytes)
 	}
+}
+
+func resolveUser(ctx context.Context) string {
+	user := "anon"
+	if bd, ok := ctx.Value(BoxData).(*accessbox.Box); ok && bd != nil && bd.Gate != nil && bd.Gate.BearerToken != nil {
+		user = bearer.ResolveIssuer(*bd.Gate.BearerToken).String()
+	}
+	return user
 }
 
 // Inc increments the api stats counter.
@@ -350,7 +381,7 @@ func (u *UsersAPIStats) Update(user, bucket, cnrID string, reqType RequestType, 
 	}
 
 	bktStat := usersStat.buckets[key]
-	bktStat.Operations[reqType] += 1
+	bktStat.Operations[reqType]++
 	bktStat.InTraffic += in
 	bktStat.OutTraffic += out
 	usersStat.buckets[key] = bktStat
@@ -412,40 +443,6 @@ func (st *HTTPStats) getInputBytes() uint64 {
 
 func (st *HTTPStats) getOutputBytes() uint64 {
 	return atomic.LoadUint64(&st.totalOutputBytes)
-}
-
-// Update statistics from http request and response data.
-func (st *HTTPStats) updateStats(apiOperation string, w http.ResponseWriter, r *http.Request, durationSecs float64, in, out uint64) {
-	var code int
-
-	if res, ok := w.(*responseWrapper); ok {
-		code = res.statusCode
-	}
-
-	user := "anon"
-	if bd, ok := r.Context().Value(BoxData).(*accessbox.Box); ok && bd != nil && bd.Gate != nil && bd.Gate.BearerToken != nil {
-		user = bearer.ResolveIssuer(*bd.Gate.BearerToken).String()
-	}
-
-	reqInfo := GetReqInfo(r.Context())
-	cnrID := GetCID(r.Context())
-
-	st.usersS3Requests.Update(user, reqInfo.BucketName, cnrID, RequestTypeFromAPI(apiOperation), in, out)
-
-	// A successful request has a 2xx response code
-	successReq := code >= http.StatusOK && code < http.StatusMultipleChoices
-
-	if !strings.HasSuffix(r.URL.Path, systemPath) {
-		st.totalS3Requests.Inc(apiOperation)
-		if !successReq && code != 0 {
-			st.totalS3Errors.Inc(apiOperation)
-		}
-	}
-
-	if r.Method == http.MethodGet {
-		// Increment the prometheus http request response histogram with appropriate label
-		httpRequestsDuration.With(prometheus.Labels{"api": apiOperation}).Observe(durationSecs)
-	}
 }
 
 // WriteHeader -- writes http status code.

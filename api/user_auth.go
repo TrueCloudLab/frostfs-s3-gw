@@ -19,9 +19,9 @@ var BoxData = KeyWrapper("__context_box_key")
 // ClientTime is an ID used to store client time.Time in a context.
 var ClientTime = KeyWrapper("__context_client_time")
 
-// AttachUserAuth adds user authentication via center to router using log for logging.
-func AttachUserAuth(router *mux.Router, center auth.Center, log *zap.Logger) {
-	router.Use(func(h http.Handler) http.Handler {
+// AuthMiddleware adds user authentication via center to router using log for logging.
+func AuthMiddleware(log *zap.Logger, center auth.Center) mux.MiddlewareFunc {
+	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var ctx context.Context
 			box, err := center.Authenticate(r)
@@ -46,5 +46,5 @@ func AttachUserAuth(router *mux.Router, center auth.Center, log *zap.Logger) {
 
 			h.ServeHTTP(w, r.WithContext(ctx))
 		})
-	})
+	}
 }

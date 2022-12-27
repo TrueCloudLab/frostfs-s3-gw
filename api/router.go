@@ -108,7 +108,7 @@ const (
 	MimeXML mimeType = "application/xml"
 )
 
-var _ = logErrorResponse
+var _ = logSuccessResponse
 
 func (lrw *logResponseWriter) WriteHeader(code int) {
 	lrw.Do(func() {
@@ -147,33 +147,37 @@ func appendCORS(handler Handler) mux.MiddlewareFunc {
 	}
 }
 
-func resolveBucket(log *zap.Logger, resolveBucket func(ctx context.Context, bucket string) (*data.BucketInfo, error)) mux.MiddlewareFunc {
+// BucketResolveFunc is a func to resolve bucket info by name.
+type BucketResolveFunc func(ctx context.Context, bucket string) (*data.BucketInfo, error)
+
+// metricsMiddleware wraps http handler for api with basic statistics collection.
+func metricsMiddleware(log *zap.Logger, resolveBucket BucketResolveFunc) mux.MiddlewareFunc {
 	return func(h http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			reqInfo := GetReqInfo(r.Context())
-
-			if reqInfo.BucketName != "" && reqInfo.API != "CreateBucket" {
-				bktInfo, err := resolveBucket(r.Context(), reqInfo.BucketName)
-				if err != nil {
-					code := WriteErrorResponse(w, reqInfo, err)
-					log.Error("failed to resolve bucket", zap.Int("status", code),
-						zap.String("request_id", reqInfo.RequestID), zap.String("method", reqInfo.API),
-						zap.String("bucket", reqInfo.BucketName), zap.String("object", reqInfo.ObjectName),
-						zap.Error(err))
-					return
-				}
-
-				// todo: (@KirillovDenis) consider save bktInfo into ReqInfo
-				// (in order to optimize resolving bucket in further handlers)
-				r = r.WithContext(SetCID(r.Context(), bktInfo.CID))
-			}
-
-			h.ServeHTTP(w, r)
-		})
+		return Stats(h.ServeHTTP, resolveCID(log, resolveBucket))
 	}
 }
 
-func logErrorResponse(l *zap.Logger) mux.MiddlewareFunc {
+// resolveCID forms CIDResolveFunc using BucketResolveFunc.
+func resolveCID(log *zap.Logger, resolveBucket BucketResolveFunc) CIDResolveFunc {
+	return func(ctx context.Context, reqInfo *ReqInfo) (cnrID string) {
+		if reqInfo.BucketName == "" || reqInfo.API == "CreateBucket" || reqInfo.API == "" {
+			return ""
+		}
+
+		bktInfo, err := resolveBucket(ctx, reqInfo.BucketName)
+		if err != nil {
+			log.Debug("failed to resolve CID",
+				zap.String("request_id", reqInfo.RequestID), zap.String("method", reqInfo.API),
+				zap.String("bucket", reqInfo.BucketName), zap.String("object", reqInfo.ObjectName),
+				zap.Error(err))
+			return ""
+		}
+
+		return bktInfo.CID.EncodeToString()
+	}
+}
+
+func logSuccessResponse(l *zap.Logger) mux.MiddlewareFunc {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			lw := &logResponseWriter{ResponseWriter: w}
@@ -211,6 +215,30 @@ func GetRequestID(v interface{}) string {
 	}
 }
 
+func setErrorAPI(apiName string, h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := SetReqInfo(r.Context(), &ReqInfo{API: apiName})
+		h.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// attachErrorHandler set NotFoundHandler and MethodNotAllowedHandler for mux.Router.
+func attachErrorHandler(api *mux.Router, log *zap.Logger, h Handler, center auth.Center) {
+	middlewares := []mux.MiddlewareFunc{
+		AuthMiddleware(log, center),
+		metricsMiddleware(log, h.ResolveBucket),
+	}
+
+	var errorHandler http.Handler = http.HandlerFunc(errorResponseHandler)
+	for i := len(middlewares) - 1; i >= 0; i-- {
+		errorHandler = middlewares[i](errorHandler)
+	}
+
+	// If none of the routes match, add default error handler routes
+	api.NotFoundHandler = setErrorAPI("NotFound", errorHandler)
+	api.MethodNotAllowedHandler = setErrorAPI("MethodNotAllowed", errorHandler)
+}
+
 // Attach adds S3 API handlers from h to r for domains with m client limit using
 // center authentication and log logger.
 func Attach(r *mux.Router, domains []string, m MaxClients, h Handler, center auth.Center, log *zap.Logger) {
@@ -220,15 +248,16 @@ func Attach(r *mux.Router, domains []string, m MaxClients, h Handler, center aut
 		// -- prepare request
 		setRequestID,
 
-		// -- resolve bucket to set cid in context
-		resolveBucket(log, h.ResolveBucket),
+		// Attach user authentication for all S3 routes.
+		AuthMiddleware(log, center),
+
+		metricsMiddleware(log, h.ResolveBucket),
 
 		// -- logging error requests
-		logErrorResponse(log),
+		logSuccessResponse(log),
 	)
 
-	// Attach user authentication for all S3 routes.
-	AttachUserAuth(api, center, log)
+	attachErrorHandler(api, log, h, center)
 
 	buckets := make([]*mux.Router, 0, len(domains)+1)
 	buckets = append(buckets, api.PathPrefix("/{bucket}").Subrouter())
@@ -244,277 +273,327 @@ func Attach(r *mux.Router, domains []string, m MaxClients, h Handler, center aut
 			// -- append CORS headers to a response for
 			appendCORS(h),
 		)
-		bucket.Methods(http.MethodOptions).HandlerFunc(m.Handle(APIStats("preflight", h.Preflight))).Name("Options")
+		bucket.Methods(http.MethodOptions).HandlerFunc(
+			m.Handle(h.Preflight)).
+			Name("Options")
 		bucket.Methods(http.MethodHead).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("headobject", h.HeadObjectHandler))).Name("HeadObject")
+			m.Handle(h.HeadObjectHandler)).
+			Name("HeadObject")
 		// CopyObjectPart
-		bucket.Methods(http.MethodPut).Path("/{object:.+}").Headers(hdrAmzCopySource, "").HandlerFunc(m.Handle(APIStats("uploadpartcopy", h.UploadPartCopy))).Queries("partNumber", "{partNumber:[0-9]+}", "uploadId", "{uploadId:.*}").
+		bucket.Methods(http.MethodPut).Path("/{object:.+}").Headers(hdrAmzCopySource, "").HandlerFunc(
+			m.Handle(h.UploadPartCopy)).
+			Queries("partNumber", "{partNumber:[0-9]+}", "uploadId", "{uploadId:.*}").
 			Name("UploadPartCopy")
 		// PutObjectPart
 		bucket.Methods(http.MethodPut).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("uploadpart", h.UploadPartHandler))).Queries("partNumber", "{partNumber:[0-9]+}", "uploadId", "{uploadId:.*}").
+			m.Handle(h.UploadPartHandler)).
+			Queries("partNumber", "{partNumber:[0-9]+}", "uploadId", "{uploadId:.*}").
 			Name("UploadPart")
 		// ListParts
 		bucket.Methods(http.MethodGet).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("listobjectparts", h.ListPartsHandler))).Queries("uploadId", "{uploadId:.*}").
+			m.Handle(h.ListPartsHandler)).
+			Queries("uploadId", "{uploadId:.*}").
 			Name("ListObjectParts")
 		// CompleteMultipartUpload
 		bucket.Methods(http.MethodPost).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("completemutipartupload", h.CompleteMultipartUploadHandler))).Queries("uploadId", "{uploadId:.*}").
+			m.Handle(h.CompleteMultipartUploadHandler)).
+			Queries("uploadId", "{uploadId:.*}").
 			Name("CompleteMultipartUpload")
 		// CreateMultipartUpload
 		bucket.Methods(http.MethodPost).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("createmultipartupload", h.CreateMultipartUploadHandler))).Queries("uploads", "").
+			m.Handle(h.CreateMultipartUploadHandler)).
+			Queries("uploads", "").
 			Name("CreateMultipartUpload")
 		// AbortMultipartUpload
 		bucket.Methods(http.MethodDelete).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("abortmultipartupload", h.AbortMultipartUploadHandler))).Queries("uploadId", "{uploadId:.*}").
+			m.Handle(h.AbortMultipartUploadHandler)).
+			Queries("uploadId", "{uploadId:.*}").
 			Name("AbortMultipartUpload")
 		// ListMultipartUploads
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("listmultipartuploads", h.ListMultipartUploadsHandler))).Queries("uploads", "").
+			m.Handle(h.ListMultipartUploadsHandler)).
+			Queries("uploads", "").
 			Name("ListMultipartUploads")
 		// GetObjectACL -- this is a dummy call.
 		bucket.Methods(http.MethodGet).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("getobjectacl", h.GetObjectACLHandler))).Queries("acl", "").
+			m.Handle(h.GetObjectACLHandler)).
+			Queries("acl", "").
 			Name("GetObjectACL")
 		// PutObjectACL -- this is a dummy call.
 		bucket.Methods(http.MethodPut).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("putobjectacl", h.PutObjectACLHandler))).Queries("acl", "").
+			m.Handle(h.PutObjectACLHandler)).
+			Queries("acl", "").
 			Name("PutObjectACL")
 		// GetObjectTagging
 		bucket.Methods(http.MethodGet).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("getobjecttagging", h.GetObjectTaggingHandler))).Queries("tagging", "").
+			m.Handle(h.GetObjectTaggingHandler)).
+			Queries("tagging", "").
 			Name("GetObjectTagging")
 		// PutObjectTagging
 		bucket.Methods(http.MethodPut).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("putobjecttagging", h.PutObjectTaggingHandler))).Queries("tagging", "").
+			m.Handle(h.PutObjectTaggingHandler)).
+			Queries("tagging", "").
 			Name("PutObjectTagging")
 		// DeleteObjectTagging
 		bucket.Methods(http.MethodDelete).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("deleteobjecttagging", h.DeleteObjectTaggingHandler))).Queries("tagging", "").
+			m.Handle(h.DeleteObjectTaggingHandler)).
+			Queries("tagging", "").
 			Name("DeleteObjectTagging")
 		// SelectObjectContent
 		bucket.Methods(http.MethodPost).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("selectobjectcontent", h.SelectObjectContentHandler))).Queries("select", "").Queries("select-type", "2").
+			m.Handle(h.SelectObjectContentHandler)).
+			Queries("select", "").Queries("select-type", "2").
 			Name("SelectObjectContent")
 		// GetObjectRetention
 		bucket.Methods(http.MethodGet).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("getobjectretention", h.GetObjectRetentionHandler))).Queries("retention", "").
+			m.Handle(h.GetObjectRetentionHandler)).
+			Queries("retention", "").
 			Name("GetObjectRetention")
 		// GetObjectLegalHold
 		bucket.Methods(http.MethodGet).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("getobjectlegalhold", h.GetObjectLegalHoldHandler))).Queries("legal-hold", "").
+			m.Handle(h.GetObjectLegalHoldHandler)).
+			Queries("legal-hold", "").
 			Name("GetObjectLegalHold")
 		// GetObjectAttributes
 		bucket.Methods(http.MethodGet).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("getobjectattributes", h.GetObjectAttributesHandler))).Queries("attributes", "").
+			m.Handle(h.GetObjectAttributesHandler)).
+			Queries("attributes", "").
 			Name("GetObjectAttributes")
 		// GetObject
 		bucket.Methods(http.MethodGet).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("getobject", h.GetObjectHandler))).
+			m.Handle(h.GetObjectHandler)).
 			Name("GetObject")
 		// CopyObject
-		bucket.Methods(http.MethodPut).Path("/{object:.+}").Headers(hdrAmzCopySource, "").HandlerFunc(m.Handle(APIStats("copyobject", h.CopyObjectHandler))).
+		bucket.Methods(http.MethodPut).Path("/{object:.+}").Headers(hdrAmzCopySource, "").HandlerFunc(
+			m.Handle(h.CopyObjectHandler)).
 			Name("CopyObject")
 		// PutObjectRetention
 		bucket.Methods(http.MethodPut).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("putobjectretention", h.PutObjectRetentionHandler))).Queries("retention", "").
+			m.Handle(h.PutObjectRetentionHandler)).
+			Queries("retention", "").
 			Name("PutObjectRetention")
 		// PutObjectLegalHold
 		bucket.Methods(http.MethodPut).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("putobjectlegalhold", h.PutObjectLegalHoldHandler))).Queries("legal-hold", "").
+			m.Handle(h.PutObjectLegalHoldHandler)).
+			Queries("legal-hold", "").
 			Name("PutObjectLegalHold")
 
 		// PutObject
 		bucket.Methods(http.MethodPut).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("putobject", h.PutObjectHandler))).
+			m.Handle(h.PutObjectHandler)).
 			Name("PutObject")
 		// DeleteObject
 		bucket.Methods(http.MethodDelete).Path("/{object:.+}").HandlerFunc(
-			m.Handle(APIStats("deleteobject", h.DeleteObjectHandler))).
+			m.Handle(h.DeleteObjectHandler)).
 			Name("DeleteObject")
 
 		// Bucket operations
 		// GetBucketLocation
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("getbucketlocation", h.GetBucketLocationHandler))).Queries("location", "").
+			m.Handle(h.GetBucketLocationHandler)).
+			Queries("location", "").
 			Name("GetBucketLocation")
 		// GetBucketPolicy
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("getbucketpolicy", h.GetBucketPolicyHandler))).Queries("policy", "").
+			m.Handle(h.GetBucketPolicyHandler)).
+			Queries("policy", "").
 			Name("GetBucketPolicy")
 		// GetBucketLifecycle
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("getbucketlifecycle", h.GetBucketLifecycleHandler))).Queries("lifecycle", "").
+			m.Handle(h.GetBucketLifecycleHandler)).
+			Queries("lifecycle", "").
 			Name("GetBucketLifecycle")
 		// GetBucketEncryption
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("getbucketencryption", h.GetBucketEncryptionHandler))).Queries("encryption", "").
+			m.Handle(h.GetBucketEncryptionHandler)).
+			Queries("encryption", "").
 			Name("GetBucketEncryption")
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("getbucketcors", h.GetBucketCorsHandler))).Queries("cors", "").
+			m.Handle(h.GetBucketCorsHandler)).
+			Queries("cors", "").
 			Name("GetBucketCors")
 		bucket.Methods(http.MethodPut).HandlerFunc(
-			m.Handle(APIStats("putbucketcors", h.PutBucketCorsHandler))).Queries("cors", "").
+			m.Handle(h.PutBucketCorsHandler)).
+			Queries("cors", "").
 			Name("PutBucketCors")
 		bucket.Methods(http.MethodDelete).HandlerFunc(
-			m.Handle(APIStats("deletebucketcors", h.DeleteBucketCorsHandler))).Queries("cors", "").
+			m.Handle(h.DeleteBucketCorsHandler)).
+			Queries("cors", "").
 			Name("DeleteBucketCors")
 		// Dummy Bucket Calls
 		// GetBucketACL -- this is a dummy call.
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("getbucketacl", h.GetBucketACLHandler))).Queries("acl", "").
+			m.Handle(h.GetBucketACLHandler)).
+			Queries("acl", "").
 			Name("GetBucketACL")
 		// PutBucketACL -- this is a dummy call.
 		bucket.Methods(http.MethodPut).HandlerFunc(
-			m.Handle(APIStats("putbucketacl", h.PutBucketACLHandler))).Queries("acl", "").
+			m.Handle(h.PutBucketACLHandler)).
+			Queries("acl", "").
 			Name("PutBucketACL")
 		// GetBucketWebsiteHandler -- this is a dummy call.
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("getbucketwebsite", h.GetBucketWebsiteHandler))).Queries("website", "").
+			m.Handle(h.GetBucketWebsiteHandler)).
+			Queries("website", "").
 			Name("GetBucketWebsite")
 		// GetBucketAccelerateHandler -- this is a dummy call.
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("getbucketaccelerate", h.GetBucketAccelerateHandler))).Queries("accelerate", "").
+			m.Handle(h.GetBucketAccelerateHandler)).
+			Queries("accelerate", "").
 			Name("GetBucketAccelerate")
 		// GetBucketRequestPaymentHandler -- this is a dummy call.
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("getbucketrequestpayment", h.GetBucketRequestPaymentHandler))).Queries("requestPayment", "").
+			m.Handle(h.GetBucketRequestPaymentHandler)).
+			Queries("requestPayment", "").
 			Name("GetBucketRequestPayment")
 		// GetBucketLoggingHandler -- this is a dummy call.
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("getbucketlogging", h.GetBucketLoggingHandler))).Queries("logging", "").
+			m.Handle(h.GetBucketLoggingHandler)).
+			Queries("logging", "").
 			Name("GetBucketLogging")
-		// GetBucketLifecycleHandler -- this is a dummy call.
-		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("getbucketlifecycle", h.GetBucketLifecycleHandler))).Queries("lifecycle", "").
-			Name("GetBucketLifecycle")
 		// GetBucketReplicationHandler -- this is a dummy call.
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("getbucketreplication", h.GetBucketReplicationHandler))).Queries("replication", "").
+			m.Handle(h.GetBucketReplicationHandler)).
+			Queries("replication", "").
 			Name("GetBucketReplication")
 		// GetBucketTaggingHandler
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("getbuckettagging", h.GetBucketTaggingHandler))).Queries("tagging", "").
+			m.Handle(h.GetBucketTaggingHandler)).
+			Queries("tagging", "").
 			Name("GetBucketTagging")
 		// DeleteBucketWebsiteHandler
 		bucket.Methods(http.MethodDelete).HandlerFunc(
-			m.Handle(APIStats("deletebucketwebsite", h.DeleteBucketWebsiteHandler))).Queries("website", "").
+			m.Handle(h.DeleteBucketWebsiteHandler)).
+			Queries("website", "").
 			Name("DeleteBucketWebsite")
 		// DeleteBucketTaggingHandler
 		bucket.Methods(http.MethodDelete).HandlerFunc(
-			m.Handle(APIStats("deletebuckettagging", h.DeleteBucketTaggingHandler))).Queries("tagging", "").
+			m.Handle(h.DeleteBucketTaggingHandler)).
+			Queries("tagging", "").
 			Name("DeleteBucketTagging")
 
 		// GetBucketObjectLockConfig
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("getbucketobjectlockconfiguration", h.GetBucketObjectLockConfigHandler))).Queries("object-lock", "").
+			m.Handle(h.GetBucketObjectLockConfigHandler)).
+			Queries("object-lock", "").
 			Name("GetBucketObjectLockConfig")
 		// GetBucketVersioning
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("getbucketversioning", h.GetBucketVersioningHandler))).Queries("versioning", "").
+			m.Handle(h.GetBucketVersioningHandler)).
+			Queries("versioning", "").
 			Name("GetBucketVersioning")
 		// GetBucketNotification
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("getbucketnotification", h.GetBucketNotificationHandler))).Queries("notification", "").
+			m.Handle(h.GetBucketNotificationHandler)).
+			Queries("notification", "").
 			Name("GetBucketNotification")
 		// ListenBucketNotification
-		bucket.Methods(http.MethodGet).HandlerFunc(APIStats("listenbucketnotification", h.ListenBucketNotificationHandler)).Queries("events", "{events:.*}").
+		bucket.Methods(http.MethodGet).HandlerFunc(h.ListenBucketNotificationHandler).
+			Queries("events", "{events:.*}").
 			Name("ListenBucketNotification")
 		// ListObjectsV2M
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("listobjectsv2M", h.ListObjectsV2MHandler))).Queries("list-type", "2", "metadata", "true").
+			m.Handle(h.ListObjectsV2MHandler)).
+			Queries("list-type", "2", "metadata", "true").
 			Name("ListObjectsV2M")
 		// ListObjectsV2
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("listobjectsv2", h.ListObjectsV2Handler))).Queries("list-type", "2").
+			m.Handle(h.ListObjectsV2Handler)).
+			Queries("list-type", "2").
 			Name("ListObjectsV2")
 		// ListBucketVersions
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("listbucketversions", h.ListBucketObjectVersionsHandler))).Queries("versions", "").
+			m.Handle(h.ListBucketObjectVersionsHandler)).
+			Queries("versions", "").
 			Name("ListBucketVersions")
 		// ListObjectsV1 (Legacy)
 		bucket.Methods(http.MethodGet).HandlerFunc(
-			m.Handle(APIStats("listobjectsv1", h.ListObjectsV1Handler))).
+			m.Handle(h.ListObjectsV1Handler)).
 			Name("ListObjectsV1")
 		// PutBucketLifecycle
 		bucket.Methods(http.MethodPut).HandlerFunc(
-			m.Handle(APIStats("putbucketlifecycle", h.PutBucketLifecycleHandler))).Queries("lifecycle", "").
+			m.Handle(h.PutBucketLifecycleHandler)).
+			Queries("lifecycle", "").
 			Name("PutBucketLifecycle")
 		// PutBucketEncryption
 		bucket.Methods(http.MethodPut).HandlerFunc(
-			m.Handle(APIStats("putbucketencryption", h.PutBucketEncryptionHandler))).Queries("encryption", "").
+			m.Handle(h.PutBucketEncryptionHandler)).
+			Queries("encryption", "").
 			Name("PutBucketEncryption")
 
 		// PutBucketPolicy
 		bucket.Methods(http.MethodPut).HandlerFunc(
-			m.Handle(APIStats("putbucketpolicy", h.PutBucketPolicyHandler))).Queries("policy", "").
+			m.Handle(h.PutBucketPolicyHandler)).
+			Queries("policy", "").
 			Name("PutBucketPolicy")
 
 		// PutBucketObjectLockConfig
 		bucket.Methods(http.MethodPut).HandlerFunc(
-			m.Handle(APIStats("putbucketobjectlockconfig", h.PutBucketObjectLockConfigHandler))).Queries("object-lock", "").
+			m.Handle(h.PutBucketObjectLockConfigHandler)).
+			Queries("object-lock", "").
 			Name("PutBucketObjectLockConfig")
 		// PutBucketTaggingHandler
 		bucket.Methods(http.MethodPut).HandlerFunc(
-			m.Handle(APIStats("putbuckettagging", h.PutBucketTaggingHandler))).Queries("tagging", "").
+			m.Handle(h.PutBucketTaggingHandler)).
+			Queries("tagging", "").
 			Name("PutBucketTagging")
 		// PutBucketVersioning
 		bucket.Methods(http.MethodPut).HandlerFunc(
-			m.Handle(APIStats("putbucketversioning", h.PutBucketVersioningHandler))).Queries("versioning", "").
+			m.Handle(h.PutBucketVersioningHandler)).
+			Queries("versioning", "").
 			Name("PutBucketVersioning")
 		// PutBucketNotification
 		bucket.Methods(http.MethodPut).HandlerFunc(
-			m.Handle(APIStats("putbucketnotification", h.PutBucketNotificationHandler))).Queries("notification", "").
+			m.Handle(h.PutBucketNotificationHandler)).
+			Queries("notification", "").
 			Name("PutBucketNotification")
 		// CreateBucket
 		bucket.Methods(http.MethodPut).HandlerFunc(
-			m.Handle(APIStats("createbucket", h.CreateBucketHandler))).
+			m.Handle(h.CreateBucketHandler)).
 			Name("CreateBucket")
 		// HeadBucket
 		bucket.Methods(http.MethodHead).HandlerFunc(
-			m.Handle(APIStats("headbucket", h.HeadBucketHandler))).
+			m.Handle(h.HeadBucketHandler)).
 			Name("HeadBucket")
 		// PostPolicy
 		bucket.Methods(http.MethodPost).HeadersRegexp(hdrContentType, "multipart/form-data*").HandlerFunc(
-			m.Handle(APIStats("postobject", h.PostObject))).
+			m.Handle(h.PostObject)).
 			Name("PostObject")
 		// DeleteMultipleObjects
 		bucket.Methods(http.MethodPost).HandlerFunc(
-			m.Handle(APIStats("deletemultipleobjects", h.DeleteMultipleObjectsHandler))).Queries("delete", "").
+			m.Handle(h.DeleteMultipleObjectsHandler)).
+			Queries("delete", "").
 			Name("DeleteMultipleObjects")
 		// DeleteBucketPolicy
 		bucket.Methods(http.MethodDelete).HandlerFunc(
-			m.Handle(APIStats("deletebucketpolicy", h.DeleteBucketPolicyHandler))).Queries("policy", "").
+			m.Handle(h.DeleteBucketPolicyHandler)).
+			Queries("policy", "").
 			Name("DeleteBucketPolicy")
 		// DeleteBucketLifecycle
 		bucket.Methods(http.MethodDelete).HandlerFunc(
-			m.Handle(APIStats("deletebucketlifecycle", h.DeleteBucketLifecycleHandler))).Queries("lifecycle", "").
+			m.Handle(h.DeleteBucketLifecycleHandler)).
+			Queries("lifecycle", "").
 			Name("DeleteBucketLifecycle")
 		// DeleteBucketEncryption
 		bucket.Methods(http.MethodDelete).HandlerFunc(
-			m.Handle(APIStats("deletebucketencryption", h.DeleteBucketEncryptionHandler))).Queries("encryption", "").
+			m.Handle(h.DeleteBucketEncryptionHandler)).
+			Queries("encryption", "").
 			Name("DeleteBucketEncryption")
 		// DeleteBucket
 		bucket.Methods(http.MethodDelete).HandlerFunc(
-			m.Handle(APIStats("deletebucket", h.DeleteBucketHandler))).
+			m.Handle(h.DeleteBucketHandler)).
 			Name("DeleteBucket")
 	}
 	// Root operation
 
 	// ListBuckets
 	api.Methods(http.MethodGet).Path(SlashSeparator).HandlerFunc(
-		m.Handle(APIStats("listbuckets", h.ListBucketsHandler))).
+		m.Handle(h.ListBucketsHandler)).
 		Name("ListBuckets")
 
 	// S3 browser with signature v4 adds '//' for ListBuckets request, so rather
 	// than failing with UnknownAPIRequest we simply handle it for now.
 	api.Methods(http.MethodGet).Path(SlashSeparator + SlashSeparator).HandlerFunc(
-		m.Handle(APIStats("listbuckets", h.ListBucketsHandler))).
+		m.Handle(h.ListBucketsHandler)).
 		Name("ListBuckets")
-
-	// If none of the routes match, add default error handler routes
-	api.NotFoundHandler = APIStats("notfound", errorResponseHandler)
-	api.MethodNotAllowedHandler = APIStats("methodnotallowed", errorResponseHandler)
 }
