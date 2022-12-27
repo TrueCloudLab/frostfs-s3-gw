@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	cid "github.com/TrueCloudLab/frostfs-sdk-go/container/id"
 	"net"
 	"net/http"
 	"net/url"
@@ -43,13 +42,10 @@ type (
 	}
 )
 
-// Key used for Get/Set context values.
+// Key used for Get/SetReqInfo.
 type contextKeyType string
 
-const (
-	ctxRequestInfo = contextKeyType("FrostFS-S3-GW")
-	ctxCID         = contextKeyType("FrostFS-S3-GW-CID")
-)
+const ctxRequestInfo = contextKeyType("FrostFS-S3-GW")
 
 var (
 	// De-facto standard header keys.
@@ -205,22 +201,4 @@ func GetReqInfo(ctx context.Context) *ReqInfo {
 		return r
 	}
 	return &ReqInfo{}
-}
-
-// SetCID sets CID in the context.
-func SetCID(ctx context.Context, id cid.ID) context.Context {
-	if ctx == nil {
-		return nil
-	}
-	return context.WithValue(ctx, ctxCID, id.EncodeToString())
-}
-
-// GetCID returns CID if set.
-func GetCID(ctx context.Context) string {
-	if ctx == nil {
-		return ""
-	} else if id, ok := ctx.Value(ctxCID).(string); ok {
-		return id
-	}
-	return ""
 }
