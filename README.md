@@ -1,3 +1,15 @@
+<p align="center">
+<img src="./.github/logo.svg" width="500px" alt="FrostFS logo">
+</p>
+<p align="center">
+  <a href="https://frostfs.info">FrostFS</a> is a decentralized distributed object storage integrated with the <a href="https://neo.org">NEO Blockchain</a>.
+</p>
+
+---
+[![Report](https://goreportcard.com/badge/github.com/TrueCloudLab/frostfs-s3-gw)](https://goreportcard.com/report/github.com/TrueCloudLab/frostfs-s3-gw)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/TrueCloudLab/frostfs-s3-gw?sort=semver)
+![License](https://img.shields.io/github/license/TrueCloudLab/frostfs-s3-gw.svg?style=popout)
+
 # FrostFS S3 Gateway
 
 FrostFS S3 gateway provides API compatible with Amazon S3 cloud storage service.
