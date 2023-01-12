@@ -154,8 +154,9 @@ func (n *layer) putExpirationObject(ctx context.Context, bktInfo *data.BucketInf
 		}
 	}
 
-	if expTime.After(time.Now()) {
-		_, exp, err = n.neoFS.TimeToEpoch(ctx, expTime)
+	now := TimeNow(ctx)
+	if expTime.After(now) {
+		_, exp, err = n.frostFS.TimeToEpoch(ctx, now, expTime)
 		if err != nil {
 			return oid.ID{}, fmt.Errorf("couldn't compute expiration epoch: %w", err)
 		}

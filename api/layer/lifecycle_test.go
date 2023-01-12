@@ -3,7 +3,7 @@ package layer
 import (
 	"testing"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api/data"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
 	"github.com/stretchr/testify/require"
 )
 

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api"
-	"github.com/nspcc-dev/neofs-s3-gw/api/data"
-	apiErrors "github.com/nspcc-dev/neofs-s3-gw/api/errors"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
+	apiErrors "github.com/TrueCloudLab/frostfs-s3-gw/api/errors"
 )
 
 func (h *handler) PutBucketLifecycleHandler(w http.ResponseWriter, r *http.Request) {

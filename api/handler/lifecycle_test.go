@@ -1,15 +1,14 @@
 package handler
 
 import (
-	"context"
 	"encoding/xml"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 
-	"github.com/nspcc-dev/neofs-s3-gw/api/data"
-	apiErrors "github.com/nspcc-dev/neofs-s3-gw/api/errors"
+	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
+	apiErrors "github.com/TrueCloudLab/frostfs-s3-gw/api/errors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -101,13 +100,12 @@ func TestCheckLifecycleConfiguration(t *testing.T) {
 }
 
 func TestBucketLifecycleConfiguration(t *testing.T) {
-	ctx := context.Background()
 	hc := prepareHandlerContext(t)
 
 	bktName := "bucket-for-lifecycle"
-	createTestBucket(ctx, t, hc, bktName)
+	createTestBucket(hc, bktName)
 
-	w, r := prepareTestRequest(t, bktName, "", nil)
+	w, r := prepareTestRequest(hc, bktName, "", nil)
 	hc.Handler().GetBucketLifecycleHandler(w, r)
 	assertS3Error(t, w, apiErrors.GetAPIError(apiErrors.ErrNoSuchLifecycleConfiguration))
 
@@ -121,20 +119,20 @@ func TestBucketLifecycleConfiguration(t *testing.T) {
 				Status:     "Disabled",
 			},
 		}}
-	w, r = prepareTestRequest(t, bktName, "", lifecycleConf)
+	w, r = prepareTestRequest(hc, bktName, "", lifecycleConf)
 	hc.Handler().PutBucketLifecycleHandler(w, r)
 	require.Equal(t, http.StatusOK, w.Code)
 
-	w, r = prepareTestRequest(t, bktName, "", nil)
+	w, r = prepareTestRequest(hc, bktName, "", nil)
 	hc.Handler().GetBucketLifecycleHandler(w, r)
 	assertXMLEqual(t, w, lifecycleConf, &data.LifecycleConfiguration{})
 
-	w, r = prepareTestRequest(t, bktName, "", lifecycleConf)
+	w, r = prepareTestRequest(hc, bktName, "", lifecycleConf)
 	hc.Handler().DeleteBucketLifecycleHandler(w, r)
 	require.Equal(t, http.StatusNoContent, w.Code)
 
 	// make sure deleting is idempotent operation
-	w, r = prepareTestRequest(t, bktName, "", lifecycleConf)
+	w, r = prepareTestRequest(hc, bktName, "", lifecycleConf)
 	hc.Handler().DeleteBucketLifecycleHandler(w, r)
 	require.Equal(t, http.StatusNoContent, w.Code)
 }

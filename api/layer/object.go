@@ -303,8 +303,6 @@ func (n *layer) PutObject(ctx context.Context, p *PutObjectParams) (*data.Extend
 		return nil, fmt.Errorf("couldn't put expiration system objects: %w", err)
 	}
 
-	n.listsCache.CleanCacheEntriesContainingObject(p.Object, p.BktInfo.CID)
-
 	n.cache.PutObjectWithName(owner, extendedObjInfo)
 
 	return extendedObjInfo, nil
