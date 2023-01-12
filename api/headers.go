@@ -57,6 +57,7 @@ const (
 	AmzObjectAttributes          = "X-Amz-Object-Attributes"
 	AmzMaxParts                  = "X-Amz-Max-Parts"
 	AmzPartNumberMarker          = "X-Amz-Part-Number-Marker"
+	AmzExpiration                = "X-Amz-Expiration"
 
 	AmzServerSideEncryptionCustomerAlgorithm = "x-amz-server-side-encryption-customer-algorithm"
 	AmzServerSideEncryptionCustomerKey       = "x-amz-server-side-encryption-customer-key"

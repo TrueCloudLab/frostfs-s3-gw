@@ -195,6 +195,11 @@ func (h *handler) GetObjectHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err = h.setExpirationHeader(r.Context(), bktInfo, info, w.Header()); err != nil {
+		h.logAndSendError(w, "could not get expiration info", reqInfo, err)
+		return
+	}
+
 	bktSettings, err := h.obj.GetBucketSettings(r.Context(), bktInfo)
 	if err != nil {
 		h.logAndSendError(w, "could not get bucket settings", reqInfo, err)

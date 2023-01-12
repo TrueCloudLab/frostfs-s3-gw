@@ -15,8 +15,7 @@ import (
 )
 
 const (
-	AttributeComplianceMode  = ".s3-compliance-mode"
-	AttributeExpirationEpoch = "__NEOFS__EXPIRATION_EPOCH"
+	AttributeComplianceMode = ".s3-compliance-mode"
 )
 
 type PutLockInfoParams struct {
@@ -124,6 +123,54 @@ func (n *layer) putLockObject(ctx context.Context, bktInfo *data.BucketInfo, obj
 	prm.Attributes, err = n.attributesFromLock(ctx, lock)
 	if err != nil {
 		return oid.ID{}, err
+	}
+
+	id, _, err := n.objectPutAndHash(ctx, prm, bktInfo)
+	return id, err
+}
+
+func (n *layer) putExpirationObject(ctx context.Context, bktInfo *data.BucketInfo, objInfo *data.ObjectInfo, expObj *data.ExpirationObject) (oid.ID, error) {
+	prm := PrmObjectCreate{
+		Container: bktInfo.CID,
+		Creator:   bktInfo.Owner,
+		Filepath:  objInfo.ExpirationObject(),
+	}
+
+	var (
+		err     error
+		exp     uint64
+		expTime time.Time
+	)
+
+	if expObj.Expiration.Days != nil {
+		expTime = objInfo.Created.Add(time.Duration(*expObj.Expiration.Days) * 24 * time.Hour).UTC()
+		// emulate rounding the resulting time to the next day midnight UTC
+		toMidnight := 24 - expTime.UTC().Hour()
+		expTime = expTime.Add(time.Duration(toMidnight) * time.Hour)
+	} else {
+		expTime, err = time.Parse(time.RFC3339, *expObj.Expiration.Date)
+		if err != nil {
+			return oid.ID{}, fmt.Errorf("couldn't parse expiration date '%s': %w", *expObj.Expiration.Date, err)
+		}
+	}
+
+	now := TimeNow(ctx)
+	if expTime.After(now) {
+		_, exp, err = n.frostFS.TimeToEpoch(ctx, now, expTime)
+		if err != nil {
+			return oid.ID{}, fmt.Errorf("couldn't compute expiration epoch: %w", err)
+		}
+	}
+
+	prm.Attributes = [][2]string{
+		{AttributeExpirationEpoch, strconv.FormatUint(exp+4, 10)},
+		{AttributeSysTickEpoch, strconv.FormatUint(exp, 10)},
+		{AttributeSysTickTopic, ExpireTopic},
+		{AttributeParentObject, objInfo.Name},
+		{AttributeParentBucket, bktInfo.Name},
+		{AttributeExpireDate, expTime.Format(time.RFC3339)},
+		{AttributeExpireRuleID, expObj.RuleID},
+		{AttributeLifecycleConfigID, expObj.LifecycleConfigID},
 	}
 
 	id, _, err := n.objectPutAndHash(ctx, prm, bktInfo)
