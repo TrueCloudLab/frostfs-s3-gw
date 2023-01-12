@@ -8,8 +8,6 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-
-	"github.com/gorilla/mux"
 )
 
 type (
@@ -102,29 +100,6 @@ func GetSourceIP(r *http.Request) string {
 	// Default to remote address if headers not set.
 	addr, _, _ = net.SplitHostPort(r.RemoteAddr)
 	return addr
-}
-
-func prepareContext(w http.ResponseWriter, r *http.Request) context.Context {
-	vars := mux.Vars(r)
-	bucket := vars["bucket"]
-	object, err := url.PathUnescape(vars["object"])
-	if err != nil {
-		object = vars["object"]
-	}
-	prefix, err := url.QueryUnescape(vars["prefix"])
-	if err != nil {
-		prefix = vars["prefix"]
-	}
-	if prefix != "" {
-		object = prefix
-	}
-	return SetReqInfo(r.Context(),
-		// prepare request info
-		NewReqInfo(w, r, ObjectRequest{
-			Bucket: bucket,
-			Object: object,
-			Method: mux.CurrentRoute(r).GetName(),
-		}))
 }
 
 // NewReqInfo returns new ReqInfo based on parameters.

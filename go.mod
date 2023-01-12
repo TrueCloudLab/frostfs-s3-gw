@@ -7,6 +7,8 @@ require (
 	github.com/TrueCloudLab/frostfs-sdk-go v0.0.0-20221214065929-4c779423f556
 	github.com/aws/aws-sdk-go v1.44.6
 	github.com/bluele/gcache v0.0.2
+	github.com/go-chi/chi/v5 v5.0.8
+	github.com/go-chi/hostrouter v0.2.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/minio/sio v0.3.0

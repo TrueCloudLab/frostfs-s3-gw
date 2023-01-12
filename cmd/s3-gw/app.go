@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/go-chi/chi/v5/middleware"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,7 +26,7 @@ import (
 	"github.com/TrueCloudLab/frostfs-s3-gw/internal/wallet"
 	"github.com/TrueCloudLab/frostfs-sdk-go/netmap"
 	"github.com/TrueCloudLab/frostfs-sdk-go/pool"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 	"github.com/nspcc-dev/neo-go/pkg/crypto/keys"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -49,15 +50,20 @@ type (
 		bucketResolver *resolver.BucketResolver
 		services       []*Service
 		settings       *appSettings
-		maxClients     api.MaxClients
 
 		webDone chan struct{}
 		wrkDone chan struct{}
 	}
 
 	appSettings struct {
-		logLevel zap.AtomicLevel
-		policies *placementPolicy
+		logLevel  zap.AtomicLevel
+		policies  *placementPolicy
+		maxClient maxClientsConfig
+	}
+
+	maxClientsConfig struct {
+		deadline time.Duration
+		count    int
 	}
 
 	Logger struct {
@@ -100,8 +106,7 @@ func newApp(ctx context.Context, log *Logger, v *viper.Viper) *App {
 		webDone: make(chan struct{}, 1),
 		wrkDone: make(chan struct{}, 1),
 
-		maxClients: newMaxClients(v),
-		settings:   newAppSettings(log, v),
+		settings: newAppSettings(log, v),
 	}
 
 	app.init(ctx)
@@ -163,8 +168,9 @@ func newAppSettings(log *Logger, v *viper.Viper) *appSettings {
 	}
 
 	return &appSettings{
-		logLevel: log.lvl,
-		policies: policies,
+		logLevel:  log.lvl,
+		policies:  policies,
+		maxClient: newMaxClients(v),
 	}
 }
 
@@ -214,18 +220,20 @@ func (a *App) getResolverConfig() ([]string, *resolver.Config) {
 	return order, resolveCfg
 }
 
-func newMaxClients(cfg *viper.Viper) api.MaxClients {
-	maxClientsCount := cfg.GetInt(cfgMaxClientsCount)
-	if maxClientsCount <= 0 {
-		maxClientsCount = defaultMaxClientsCount
+func newMaxClients(cfg *viper.Viper) maxClientsConfig {
+	config := maxClientsConfig{}
+
+	config.count = cfg.GetInt(cfgMaxClientsCount)
+	if config.count <= 0 {
+		config.count = defaultMaxClientsCount
 	}
 
-	maxClientsDeadline := cfg.GetDuration(cfgMaxClientsDeadline)
-	if maxClientsDeadline <= 0 {
-		maxClientsDeadline = defaultMaxClientsDeadline
+	config.deadline = cfg.GetDuration(cfgMaxClientsDeadline)
+	if config.deadline <= 0 {
+		config.deadline = defaultMaxClientsDeadline
 	}
 
-	return api.NewMaxClientsMiddleware(maxClientsCount, maxClientsDeadline)
+	return config
 }
 
 func getPool(ctx context.Context, logger *zap.Logger, cfg *viper.Viper) (*pool.Pool, *keys.PrivateKey) {
@@ -420,12 +428,18 @@ func (a *App) Serve(ctx context.Context) {
 	// Attach S3 API:
 	domains := a.cfg.GetStringSlice(cfgListenDomains)
 	a.log.Info("fetch domains, prepare to use API", zap.Strings("domains", domains))
-	router := mux.NewRouter().SkipClean(true).UseEncodedPath()
-	api.Attach(router, domains, a.maxClients, a.api, a.ctr, a.log)
+
+	throttleOps := middleware.ThrottleOpts{
+		Limit:          a.settings.maxClient.count,
+		BacklogTimeout: a.settings.maxClient.deadline,
+	}
+
+	chiRouter := chi.NewRouter()
+	api.AttachChi(chiRouter, domains, throttleOps, a.api, a.ctr, a.log)
 
 	// Use mux.Router as http.Handler
 	srv := new(http.Server)
-	srv.Handler = router
+	srv.Handler = chiRouter
 	srv.ErrorLog = zap.NewStdLog(a.log)
 
 	a.startServices()
