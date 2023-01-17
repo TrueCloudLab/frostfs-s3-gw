@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/TrueCloudLab/frostfs-s3-gw/api/auth"
@@ -12,7 +13,6 @@ import (
 	"github.com/TrueCloudLab/frostfs-s3-gw/api/metrics"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/hostrouter"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -256,6 +256,69 @@ func authMiddleware(center auth.Center, log *zap.Logger) func(h http.Handler) ht
 	}
 }
 
+type HostBucketRouter struct {
+	routes        map[string]chi.Router
+	bktParam      string
+	defaultRouter chi.Router
+}
+
+func NewHostBucketRouter(bktParam string) HostBucketRouter {
+	return HostBucketRouter{
+		routes:   make(map[string]chi.Router),
+		bktParam: bktParam,
+	}
+}
+
+func (hr *HostBucketRouter) Default(router chi.Router) {
+	hr.defaultRouter = router
+}
+
+func (hr HostBucketRouter) Map(host string, h chi.Router) {
+	hr.routes[strings.ToLower(host)] = h
+}
+
+func (hr HostBucketRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	bucket, domain := getBucketDomain(getHost(r))
+	router, ok := hr.routes[strings.ToLower(domain)]
+	if !ok {
+		router = hr.defaultRouter
+		if router == nil {
+			http.Error(w, http.StatusText(404), 404)
+			return
+		}
+	}
+
+	if rctx := chi.RouteContext(r.Context()); rctx != nil && bucket != "" {
+		rctx.URLParams.Add(hr.bktParam, bucket)
+	}
+
+	router.ServeHTTP(w, r)
+}
+
+func getBucketDomain(host string) (bucket string, domain string) {
+	parts := strings.Split(host, ".")
+	if len(parts) > 1 {
+		return parts[0], strings.Join(parts[1:], ".")
+	}
+	return "", host
+}
+
+// getHost tries its best to return the request host.
+// According to section 14.23 of RFC 2616 the Host header
+// can include the port number if the default value of 80 is not used.
+func getHost(r *http.Request) string {
+	host := r.Host
+	if r.URL.IsAbs() {
+		host = r.URL.Host
+	}
+
+	if i := strings.Index(host, ":"); i != -1 {
+		host = host[:i]
+	}
+
+	return host
+}
+
 func AttachChi(api *chi.Mux, domains []string, throttle middleware.ThrottleOpts, h Handler, center auth.Center, log *zap.Logger) {
 	api.Use(
 		middleware.CleanPath,
@@ -266,15 +329,16 @@ func AttachChi(api *chi.Mux, domains []string, throttle middleware.ThrottleOpts,
 		authMiddleware(center, log),
 	)
 
-	// todo reconsider host routing
-	hr := hostrouter.New()
-	for _, domain := range domains {
-		hr.Map("*."+domain, bucketRouter(h, log))
-	}
+	defaultRouter := chi.NewRouter()
+	defaultRouter.Mount("/{bucket}", bucketRouter(h, log))
+	defaultRouter.Get("/", Named("ListBuckets", h.ListBucketsHandler))
 
+	hr := NewHostBucketRouter("bucket")
+	hr.Default(defaultRouter)
+	for _, domain := range domains {
+		hr.Map(domain, bucketRouter(h, log))
+	}
 	api.Mount("/", hr)
-	api.Mount("/{bucket}", bucketRouter(h, log))
-	api.Get("/", h.ListBucketsHandler)
 
 	// If none of the routes match, add default error handler routes
 	api.NotFound(metrics.APIStats("notfound", errorResponseHandler))
