@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/TrueCloudLab/frostfs-api-go/v2 v2.0.0-20221212144048-1351b6656d68
-	github.com/TrueCloudLab/frostfs-sdk-go v0.0.0-20221230104050-dd88a5c5e0cc
+	github.com/TrueCloudLab/frostfs-sdk-go v0.0.0-20230113102129-b2a37543d34d
 	github.com/aws/aws-sdk-go v1.44.6
 	github.com/bluele/gcache v0.0.2
 	github.com/google/uuid v1.3.0
