@@ -273,6 +273,7 @@ func getPool(ctx context.Context, logger *zap.Logger, cfg *viper.Viper) (*pool.P
 		errorThreshold = defaultPoolErrorThreshold
 	}
 	prm.SetErrorThreshold(errorThreshold)
+	prm.SetLogger(logger)
 
 	p, err := pool.NewPool(prm)
 	if err != nil {
