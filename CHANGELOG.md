@@ -4,6 +4,9 @@ This document outlines major changes between releases.
 
 ## [Unreleased]
 
+## Changed
+- Using multiple servers require only one healthy (TrueCloudLab#12)
+
 ## [0.26.0] - 2022-12-28
 
 ### Added
