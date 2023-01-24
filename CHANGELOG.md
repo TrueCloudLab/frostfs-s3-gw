@@ -5,6 +5,8 @@ This document outlines major changes between releases.
 ## [Unreleased]
 
 ## Changed
+- Update neo-go to v0.101.0 (#14)
+- Update viper to v1.15.0 (#14)
 - Using multiple servers require only one healthy (TrueCloudLab#12)
 
 ## [0.26.0] - 2022-12-28
