@@ -1,11 +1,9 @@
 name: DCO check
-
 on:
   pull_request:
     branches:
       - master
       - 'support/*'
-
 jobs:
   commits_check_job:
     runs-on: ubuntu-latest
