@@ -4,6 +4,9 @@ This document outlines major changes between releases.
 
 ## [Unreleased]
 
+### Added
+- Billing metrics (TrueCloudLab#5)
+
 ### Changed
 - Update neo-go to v0.101.0 (#14)
 - Update viper to v1.15.0 (#14)
