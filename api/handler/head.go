@@ -123,6 +123,7 @@ func (h *handler) HeadBucketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set(api.ContainerID, bktInfo.CID.EncodeToString())
+	w.Header().Set(api.ContainerName, bktInfo.Name)
 	w.Header().Set(api.AmzBucketRegion, bktInfo.LocationConstraint)
 	api.WriteResponse(w, http.StatusOK, nil, api.MimeNone)
 }
