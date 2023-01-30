@@ -62,7 +62,8 @@ const (
 	AmzServerSideEncryptionCustomerKey       = "x-amz-server-side-encryption-customer-key"
 	AmzServerSideEncryptionCustomerKeyMD5    = "x-amz-server-side-encryption-customer-key-MD5"
 
-	ContainerID = "X-Container-Id"
+	ContainerID   = "X-Container-Id"
+	ContainerName = "X-Container-Name"
 
 	AccessControlAllowOrigin      = "Access-Control-Allow-Origin"
 	AccessControlAllowMethods     = "Access-Control-Allow-Methods"
