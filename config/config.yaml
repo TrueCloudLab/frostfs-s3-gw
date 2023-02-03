@@ -55,11 +55,11 @@ resolve_order:
 
 # Metrics
 pprof:
-  enabled: true
+  enabled: false
   address: localhost:8085
 
 prometheus:
-  enabled: true
+  enabled: false
   address: localhost:8086
 
 # Timeout to connect to a node
