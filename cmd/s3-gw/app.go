@@ -472,11 +472,11 @@ func shutdownContext() (context.Context, context.CancelFunc) {
 func (a *App) configReload() {
 	a.log.Info("SIGHUP config reload started")
 
-	if !a.cfg.IsSet(cmdConfig) {
+	if !a.cfg.IsSet(cmdConfig) && !a.cfg.IsSet(cmdConfigDir) {
 		a.log.Warn("failed to reload config because it's missed")
 		return
 	}
-	if err := readConfig(a.cfg); err != nil {
+	if err := readInConfig(a.cfg); err != nil {
 		a.log.Warn("failed to reload config", zap.Error(err))
 		return
 	}

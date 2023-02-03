@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path"
 	"runtime"
 	"sort"
 	"strconv"
@@ -113,11 +114,12 @@ const ( // Settings.
 	cfgApplicationBuildTime = "app.build_time"
 
 	// Command line args.
-	cmdHelp    = "help"
-	cmdVersion = "version"
-	cmdConfig  = "config"
-	cmdPProf   = "pprof"
-	cmdMetrics = "metrics"
+	cmdHelp      = "help"
+	cmdVersion   = "version"
+	cmdConfig    = "config"
+	cmdConfigDir = "config-dir"
+	cmdPProf     = "pprof"
+	cmdMetrics   = "metrics"
 
 	cmdListenAddress = "listen_address"
 
@@ -214,7 +216,8 @@ func newSettings() *viper.Viper {
 
 	flags.StringP(cmdWallet, "w", "", `path to the wallet`)
 	flags.String(cmdAddress, "", `address of wallet account`)
-	flags.String(cmdConfig, "", "config path")
+	flags.StringArray(cmdConfig, nil, "config paths")
+	flags.String(cmdConfigDir, "", "config dir path")
 
 	flags.Duration(cfgHealthcheckTimeout, defaultHealthcheckTimeout, "set timeout to check node health during rebalance")
 	flags.Duration(cfgConnectTimeout, defaultConnectTimeout, "set timeout to connect to FrostFS nodes")
@@ -313,10 +316,8 @@ func newSettings() *viper.Viper {
 		os.Exit(0)
 	}
 
-	if v.IsSet(cmdConfig) {
-		if err := readConfig(v); err != nil {
-			panic(err)
-		}
+	if err := readInConfig(v); err != nil {
+		panic(err)
 	}
 
 	return v
@@ -330,6 +331,9 @@ func bindFlags(v *viper.Viper, flags *pflag.FlagSet) error {
 		return err
 	}
 	if err := v.BindPFlag(cmdConfig, flags.Lookup(cmdConfig)); err != nil {
+		return err
+	}
+	if err := v.BindPFlag(cmdConfigDir, flags.Lookup(cmdConfigDir)); err != nil {
 		return err
 	}
 	if err := v.BindPFlag(cfgWalletPath, flags.Lookup(cmdWallet)); err != nil {
@@ -370,17 +374,72 @@ func bindFlags(v *viper.Viper, flags *pflag.FlagSet) error {
 	return nil
 }
 
-func readConfig(v *viper.Viper) error {
-	cfgFileName := v.GetString(cmdConfig)
-	cfgFile, err := os.Open(cfgFileName)
+func readInConfig(v *viper.Viper) error {
+	if v.IsSet(cmdConfig) {
+		if err := readConfig(v); err != nil {
+			return err
+		}
+	}
+
+	if v.IsSet(cmdConfigDir) {
+		if err := readConfigDir(v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func readConfigDir(v *viper.Viper) error {
+	cfgSubConfigDir := v.GetString(cmdConfigDir)
+	entries, err := os.ReadDir(cfgSubConfigDir)
 	if err != nil {
 		return err
 	}
-	if err = v.ReadConfig(cfgFile); err != nil {
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		ext := path.Ext(entry.Name())
+		if ext != ".yaml" && ext != ".yml" {
+			continue
+		}
+
+		if err = mergeConfig(v, path.Join(cfgSubConfigDir, entry.Name())); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func readConfig(v *viper.Viper) error {
+	for _, fileName := range v.GetStringSlice(cmdConfig) {
+		if err := mergeConfig(v, fileName); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func mergeConfig(v *viper.Viper, fileName string) error {
+	cfgFile, err := os.Open(fileName)
+	if err != nil {
 		return err
 	}
 
-	return cfgFile.Close()
+	defer func() {
+		if errClose := cfgFile.Close(); errClose != nil {
+			panic(errClose)
+		}
+	}()
+
+	if err = v.MergeConfig(cfgFile); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // newLogger constructs a Logger instance for the current application.
