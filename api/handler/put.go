@@ -720,7 +720,10 @@ func (h *handler) CreateBucketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.setPolicy(p, createParams.LocationConstraint, policies)
+	if err = h.setPolicy(p, createParams.LocationConstraint, policies); err != nil {
+		h.logAndSendError(w, "couldn't set placement policy", reqInfo, err)
+		return
+	}
 
 	p.ObjectLockEnabled = isLockEnabled(r.Header)
 
@@ -748,25 +751,27 @@ func (h *handler) CreateBucketHandler(w http.ResponseWriter, r *http.Request) {
 	api.WriteSuccessResponseHeadersOnly(w)
 }
 
-func (h handler) setPolicy(prm *layer.CreateBucketParams, locationConstraint string, userPolicies []*accessbox.ContainerPolicy) {
+func (h handler) setPolicy(prm *layer.CreateBucketParams, locationConstraint string, userPolicies []*accessbox.ContainerPolicy) error {
 	prm.Policy = h.cfg.Policy.Default()
+	prm.LocationConstraint = locationConstraint
 
 	if locationConstraint == "" {
-		return
-	}
-
-	if policy, ok := h.cfg.Policy.Get(locationConstraint); ok {
-		prm.Policy = policy
-		prm.LocationConstraint = locationConstraint
+		return nil
 	}
 
 	for _, placementPolicy := range userPolicies {
 		if placementPolicy.LocationConstraint == locationConstraint {
 			prm.Policy = placementPolicy.Policy
-			prm.LocationConstraint = locationConstraint
-			return
+			return nil
 		}
 	}
+
+	if policy, ok := h.cfg.Policy.Get(locationConstraint); ok {
+		prm.Policy = policy
+		return nil
+	}
+
+	return errors.GetAPIError(errors.ErrInvalidLocationConstraint)
 }
 
 func isLockEnabled(header http.Header) bool {
