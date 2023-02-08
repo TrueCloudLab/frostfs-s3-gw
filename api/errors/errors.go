@@ -90,6 +90,7 @@ const (
 	ErrMissingFields
 	ErrMissingCredTag
 	ErrCredMalformed
+	ErrInvalidLocationConstraint
 	ErrInvalidRegion
 	ErrInvalidServiceS3
 	ErrInvalidServiceSTS
@@ -678,6 +679,12 @@ var errorCodes = errorCodeMap{
 		ErrCode:        ErrMalformedCredentialRegion,
 		Code:           "AuthorizationQueryParametersError",
 		Description:    "Error parsing the X-Amz-Credential parameter; the region is wrong;",
+		HTTPStatusCode: http.StatusBadRequest,
+	},
+	ErrInvalidLocationConstraint: {
+		ErrCode:        ErrInvalidLocationConstraint,
+		Code:           "InvalidLocationConstraint",
+		Description:    "The specified location (Region) constraint is not valid.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrInvalidRegion: {

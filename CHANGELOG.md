@@ -14,6 +14,7 @@ This document outlines major changes between releases.
 - Update viper to v1.15.0 (#14)
 - Using multiple servers require only one healthy (TrueCloudLab#12)
 - Update go version to go1.18 (TrueCloudLab#16)
+- Return error on invalid LocationConstraint (TrueCloudLab#23)
 
 ## [0.26.0] - 2022-12-28
 
