@@ -64,6 +64,5 @@ func (s *stats) Collect(ch chan<- prometheus.Metric) {
 
 	// connect collectors
 	collectHTTPMetrics(ch)
-	collectUserMetrics(ch)
 	collectNetworkMetrics(ch)
 }
