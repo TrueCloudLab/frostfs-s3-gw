@@ -23,6 +23,7 @@ import (
 	"github.com/TrueCloudLab/frostfs-s3-gw/internal/frostfs"
 	"github.com/TrueCloudLab/frostfs-s3-gw/internal/version"
 	"github.com/TrueCloudLab/frostfs-s3-gw/internal/wallet"
+	"github.com/TrueCloudLab/frostfs-s3-gw/metrics"
 	"github.com/TrueCloudLab/frostfs-sdk-go/netmap"
 	"github.com/TrueCloudLab/frostfs-sdk-go/pool"
 	"github.com/gorilla/mux"
@@ -45,7 +46,7 @@ type (
 
 		servers []Server
 
-		metrics        *appMetrics
+		metrics        *metrics.AppMetrics
 		bucketResolver *resolver.BucketResolver
 		services       []*Service
 		settings       *appSettings
@@ -63,18 +64,6 @@ type (
 	Logger struct {
 		logger *zap.Logger
 		lvl    zap.AtomicLevel
-	}
-
-	appMetrics struct {
-		logger   *zap.Logger
-		provider GateMetricsCollector
-		mu       sync.RWMutex
-		enabled  bool
-	}
-
-	GateMetricsCollector interface {
-		SetHealth(int32)
-		Unregister()
 	}
 
 	placementPolicy struct {
@@ -183,8 +172,7 @@ func (a *App) initAPI(ctx context.Context) {
 }
 
 func (a *App) initMetrics() {
-	gateMetricsProvider := newGateMetrics(frostfs.NewPoolStatistic(a.pool))
-	a.metrics = newAppMetrics(a.log, gateMetricsProvider, a.cfg.GetBool(cfgPrometheusEnabled))
+	a.metrics = metrics.NewAppMetrics(a.log, frostfs.NewPoolStatistic(a.pool), a.cfg.GetBool(cfgPrometheusEnabled))
 }
 
 func (a *App) initResolver() {
@@ -344,47 +332,6 @@ func (p *placementPolicy) update(defaultPolicy string, regionPolicyFilepath stri
 	return nil
 }
 
-func newAppMetrics(logger *zap.Logger, provider GateMetricsCollector, enabled bool) *appMetrics {
-	if !enabled {
-		logger.Warn("metrics are disabled")
-	}
-	return &appMetrics{
-		logger:   logger,
-		provider: provider,
-	}
-}
-
-func (m *appMetrics) SetEnabled(enabled bool) {
-	if !enabled {
-		m.logger.Warn("metrics are disabled")
-	}
-
-	m.mu.Lock()
-	m.enabled = enabled
-	m.mu.Unlock()
-}
-
-func (m *appMetrics) SetHealth(status int32) {
-	m.mu.RLock()
-	if !m.enabled {
-		m.mu.RUnlock()
-		return
-	}
-	m.mu.RUnlock()
-
-	m.provider.SetHealth(status)
-}
-
-func (m *appMetrics) Shutdown() {
-	m.mu.Lock()
-	if m.enabled {
-		m.provider.SetHealth(0)
-		m.enabled = false
-	}
-	m.provider.Unregister()
-	m.mu.Unlock()
-}
-
 func remove(list []string, element string) []string {
 	for i, item := range list {
 		if item == element {
@@ -422,7 +369,7 @@ func (a *App) Serve(ctx context.Context) {
 	domains := a.cfg.GetStringSlice(cfgListenDomains)
 	a.log.Info("fetch domains, prepare to use API", zap.Strings("domains", domains))
 	router := mux.NewRouter().SkipClean(true).UseEncodedPath()
-	api.Attach(router, domains, a.maxClients, a.api, a.ctr, a.log)
+	api.Attach(router, domains, a.maxClients, a.api, a.ctr, a.log, a.metrics)
 
 	// Use mux.Router as http.Handler
 	srv := new(http.Server)
@@ -519,7 +466,7 @@ func (a *App) startServices() {
 	a.services = append(a.services, pprofService)
 	go pprofService.Start()
 
-	prometheusService := NewPrometheusService(a.cfg, a.log)
+	prometheusService := NewPrometheusService(a.cfg, a.log, a.metrics.Handler())
 	a.services = append(a.services, prometheusService)
 	go prometheusService.Start()
 }

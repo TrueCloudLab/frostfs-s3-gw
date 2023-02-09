@@ -151,9 +151,9 @@ func appendCORS(handler Handler) mux.MiddlewareFunc {
 type BucketResolveFunc func(ctx context.Context, bucket string) (*data.BucketInfo, error)
 
 // metricsMiddleware wraps http handler for api with basic statistics collection.
-func metricsMiddleware(log *zap.Logger, resolveBucket BucketResolveFunc) mux.MiddlewareFunc {
+func metricsMiddleware(log *zap.Logger, resolveBucket BucketResolveFunc, usersStat UsersStat) mux.MiddlewareFunc {
 	return func(h http.Handler) http.Handler {
-		return Stats(h.ServeHTTP, resolveCID(log, resolveBucket))
+		return Stats(h.ServeHTTP, resolveCID(log, resolveBucket), usersStat)
 	}
 }
 
@@ -223,10 +223,10 @@ func setErrorAPI(apiName string, h http.Handler) http.Handler {
 }
 
 // attachErrorHandler set NotFoundHandler and MethodNotAllowedHandler for mux.Router.
-func attachErrorHandler(api *mux.Router, log *zap.Logger, h Handler, center auth.Center) {
+func attachErrorHandler(api *mux.Router, log *zap.Logger, h Handler, center auth.Center, usersStat UsersStat) {
 	middlewares := []mux.MiddlewareFunc{
 		AuthMiddleware(log, center),
-		metricsMiddleware(log, h.ResolveBucket),
+		metricsMiddleware(log, h.ResolveBucket, usersStat),
 	}
 
 	var errorHandler http.Handler = http.HandlerFunc(errorResponseHandler)
@@ -241,7 +241,7 @@ func attachErrorHandler(api *mux.Router, log *zap.Logger, h Handler, center auth
 
 // Attach adds S3 API handlers from h to r for domains with m client limit using
 // center authentication and log logger.
-func Attach(r *mux.Router, domains []string, m MaxClients, h Handler, center auth.Center, log *zap.Logger) {
+func Attach(r *mux.Router, domains []string, m MaxClients, h Handler, center auth.Center, log *zap.Logger, usersStat UsersStat) {
 	api := r.PathPrefix(SlashSeparator).Subrouter()
 
 	api.Use(
@@ -251,13 +251,13 @@ func Attach(r *mux.Router, domains []string, m MaxClients, h Handler, center aut
 		// Attach user authentication for all S3 routes.
 		AuthMiddleware(log, center),
 
-		metricsMiddleware(log, h.ResolveBucket),
+		metricsMiddleware(log, h.ResolveBucket, usersStat),
 
 		// -- logging error requests
 		logSuccessResponse(log),
 	)
 
-	attachErrorHandler(api, log, h, center)
+	attachErrorHandler(api, log, h, center, usersStat)
 
 	buckets := make([]*mux.Router, 0, len(domains)+1)
 	buckets = append(buckets, api.PathPrefix("/{bucket}").Subrouter())

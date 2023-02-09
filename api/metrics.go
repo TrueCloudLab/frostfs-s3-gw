@@ -14,25 +14,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type TrafficType int
-
-const (
-	UnknownTraffic TrafficType = iota
-	INTraffic      TrafficType = iota
-	OUTTraffic     TrafficType = iota
-)
-
-func (t TrafficType) String() string {
-	switch t {
-	case 1:
-		return "IN"
-	case 2:
-		return "OUT"
-	default:
-		return "Unknown"
-	}
-}
-
 type RequestType int
 
 const (
@@ -90,8 +71,6 @@ func RequestTypeFromAPI(api string) RequestType {
 	}
 }
 
-type OperationList [6]int
-
 type (
 	// HTTPAPIStats holds statistics information about
 	// the API given in the requests.
@@ -100,54 +79,13 @@ type (
 		sync.RWMutex
 	}
 
-	UsersAPIStats struct {
-		users map[string]*userAPIStats
-		sync.RWMutex
-	}
-
-	bucketKey struct {
-		name string
-		cid  string
-	}
-
-	bucketStat struct {
-		Operations OperationList
-		InTraffic  uint64
-		OutTraffic uint64
-	}
-
-	userAPIStats struct {
-		buckets map[bucketKey]bucketStat
-		user    string
-	}
-
-	UserBucketInfo struct {
-		User        string
-		Bucket      string
-		ContainerID string
-	}
-
-	UserMetricsInfo struct {
-		UserBucketInfo
-		Operation RequestType
-		Requests  int
-	}
-
-	UserTrafficMetricsInfo struct {
-		UserBucketInfo
-		Type  TrafficType
-		Value uint64
-	}
-
-	UserMetrics struct {
-		Requests []UserMetricsInfo
-		Traffic  []UserTrafficMetricsInfo
+	UsersStat interface {
+		Update(user, bucket, cnrID string, reqType RequestType, in, out uint64)
 	}
 
 	// HTTPStats holds statistics information about
 	// HTTP requests made by all clients.
 	HTTPStats struct {
-		usersS3Requests   UsersAPIStats
 		currentS3Requests HTTPAPIStats
 		totalS3Requests   HTTPAPIStats
 		totalS3Errors     HTTPAPIStats
@@ -229,45 +167,11 @@ func collectHTTPMetrics(ch chan<- prometheus.Metric) {
 	}
 }
 
-func collectUserMetrics(ch chan<- prometheus.Metric) {
-	userMetrics := httpStatsMetric.usersS3Requests.DumpMetrics()
-
-	for _, value := range userMetrics.Requests {
-		ch <- prometheus.MustNewConstMetric(
-			prometheus.NewDesc(
-				prometheus.BuildFQName("frostfs_s3", "user_requests", "count"),
-				"",
-				[]string{"user", "bucket", "cid", "operation"}, nil),
-			prometheus.CounterValue,
-			float64(value.Requests),
-			value.User,
-			value.Bucket,
-			value.ContainerID,
-			value.Operation.String(),
-		)
-	}
-
-	for _, value := range userMetrics.Traffic {
-		ch <- prometheus.MustNewConstMetric(
-			prometheus.NewDesc(
-				prometheus.BuildFQName("frostfs_s3", "user_traffic", "bytes"),
-				"",
-				[]string{"user", "bucket", "cid", "type"}, nil),
-			prometheus.CounterValue,
-			float64(value.Value),
-			value.User,
-			value.Bucket,
-			value.ContainerID,
-			value.Type.String(),
-		)
-	}
-}
-
 // CIDResolveFunc is a func to resolve CID in Stats handler.
 type CIDResolveFunc func(ctx context.Context, reqInfo *ReqInfo) (cnrID string)
 
 // Stats is a handler that update metrics.
-func Stats(f http.HandlerFunc, resolveCID CIDResolveFunc) http.HandlerFunc {
+func Stats(f http.HandlerFunc, resolveCID CIDResolveFunc, usersStat UsersStat) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqInfo := GetReqInfo(r.Context())
 
@@ -293,7 +197,7 @@ func Stats(f http.HandlerFunc, resolveCID CIDResolveFunc) http.HandlerFunc {
 
 		user := resolveUser(r.Context())
 		cnrID := resolveCID(r.Context(), reqInfo)
-		httpStatsMetric.usersS3Requests.Update(user, reqInfo.BucketName, cnrID, RequestTypeFromAPI(reqInfo.API), in.countBytes, out.countBytes)
+		usersStat.Update(user, reqInfo.BucketName, cnrID, RequestTypeFromAPI(reqInfo.API), in.countBytes, out.countBytes)
 
 		code := statsWriter.statusCode
 		// A successful request has a 2xx response code
@@ -357,84 +261,6 @@ func (stats *HTTPAPIStats) Load() map[string]int {
 		apiStats[k] = v
 	}
 	return apiStats
-}
-
-func (u *UsersAPIStats) Update(user, bucket, cnrID string, reqType RequestType, in, out uint64) {
-	u.Lock()
-	defer u.Unlock()
-
-	usersStat := u.users[user]
-	if usersStat == nil {
-		if u.users == nil {
-			u.users = make(map[string]*userAPIStats)
-		}
-		usersStat = &userAPIStats{
-			buckets: make(map[bucketKey]bucketStat, 1),
-			user:    user,
-		}
-		u.users[user] = usersStat
-	}
-
-	key := bucketKey{
-		name: bucket,
-		cid:  cnrID,
-	}
-
-	bktStat := usersStat.buckets[key]
-	bktStat.Operations[reqType]++
-	bktStat.InTraffic += in
-	bktStat.OutTraffic += out
-	usersStat.buckets[key] = bktStat
-}
-
-func (u *UsersAPIStats) DumpMetrics() UserMetrics {
-	u.Lock()
-	defer u.Unlock()
-
-	result := UserMetrics{
-		Requests: make([]UserMetricsInfo, 0, len(u.users)),
-		Traffic:  make([]UserTrafficMetricsInfo, 0, len(u.users)),
-	}
-
-	for user, userStat := range u.users {
-		for key, bktStat := range userStat.buckets {
-			userBktInfo := UserBucketInfo{
-				User:        user,
-				Bucket:      key.name,
-				ContainerID: key.cid,
-			}
-
-			if bktStat.InTraffic != 0 {
-				result.Traffic = append(result.Traffic, UserTrafficMetricsInfo{
-					UserBucketInfo: userBktInfo,
-					Type:           INTraffic,
-					Value:          bktStat.InTraffic,
-				})
-			}
-
-			if bktStat.OutTraffic != 0 {
-				result.Traffic = append(result.Traffic, UserTrafficMetricsInfo{
-					UserBucketInfo: userBktInfo,
-					Type:           OUTTraffic,
-					Value:          bktStat.OutTraffic,
-				})
-			}
-
-			for op, val := range bktStat.Operations {
-				if val != 0 {
-					result.Requests = append(result.Requests, UserMetricsInfo{
-						UserBucketInfo: userBktInfo,
-						Operation:      RequestType(op),
-						Requests:       val,
-					})
-				}
-			}
-		}
-	}
-
-	u.users = make(map[string]*userAPIStats)
-
-	return result
 }
 
 func (st *HTTPStats) getInputBytes() uint64 {
