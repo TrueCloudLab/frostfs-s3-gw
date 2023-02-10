@@ -123,8 +123,13 @@ func (h *handler) HeadBucketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set(api.ContainerID, bktInfo.CID.EncodeToString())
-	w.Header().Set(api.ContainerName, bktInfo.Name)
 	w.Header().Set(api.AmzBucketRegion, bktInfo.LocationConstraint)
+
+	if isAvailableToResolve(bktInfo.Zone, h.cfg.ResolveZoneList, h.cfg.IsResolveListAllow) {
+		w.Header().Set(api.ContainerName, bktInfo.Name)
+		w.Header().Set(api.ContainerZone, bktInfo.Zone)
+	}
+
 	api.WriteResponse(w, http.StatusOK, nil, api.MimeNone)
 }
 
@@ -157,4 +162,26 @@ func writeLockHeaders(h http.Header, legalHold *data.LegalHold, retention *data.
 		h.Set(api.AmzObjectLockRetainUntilDate, retention.RetainUntilDate)
 		h.Set(api.AmzObjectLockMode, retention.Mode)
 	}
+}
+
+func isAvailableToResolve(zone string, list []string, isAllowList bool) bool {
+	// empty zone means container doesn't have proper system name,
+	// so we don't have to resolve it
+	if len(zone) == 0 {
+		return false
+	}
+
+	var zoneInList bool
+	for _, t := range list {
+		if t == zone {
+			zoneInList = true
+			break
+		}
+	}
+	// InList | IsAllowList | Result
+	//    0         0          1
+	//    0         1          0
+	//    1         0          0
+	//    1         1          1
+	return zoneInList == isAllowList
 }

@@ -64,6 +64,7 @@ const (
 
 	ContainerID   = "X-Container-Id"
 	ContainerName = "X-Container-Name"
+	ContainerZone = "X-Container-Zone"
 
 	AccessControlAllowOrigin      = "Access-Control-Allow-Origin"
 	AccessControlAllowMethods     = "Access-Control-Allow-Methods"

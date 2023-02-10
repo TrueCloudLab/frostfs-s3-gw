@@ -130,6 +130,10 @@ const ( // Settings.
 	// List of allowed AccessKeyID prefixes.
 	cfgAllowedAccessKeyIDPrefixes = "allowed_access_key_id_prefixes"
 
+	// Bucket resolving options.
+	cfgResolveBucketAllow = "resolve_bucket.allow"
+	cfgResolveBucketDeny  = "resolve_bucket.deny"
+
 	// envPrefix is an environment variables prefix used for configuration.
 	envPrefix = "S3_GW"
 )

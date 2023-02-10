@@ -86,6 +86,26 @@ func TestInvalidAccessThroughCache(t *testing.T) {
 	assertStatus(t, w, http.StatusForbidden)
 }
 
+func TestIsAvailableToResolve(t *testing.T) {
+	list := []string{"container", "s3"}
+
+	for i, testCase := range [...]struct {
+		isAllowList bool
+		list        []string
+		zone        string
+		expected    bool
+	}{
+		{isAllowList: true, list: list, zone: "container", expected: true},
+		{isAllowList: true, list: list, zone: "sftp", expected: false},
+		{isAllowList: false, list: list, zone: "s3", expected: false},
+		{isAllowList: false, list: list, zone: "system", expected: true},
+		{isAllowList: true, list: list, zone: "", expected: false},
+	} {
+		result := isAvailableToResolve(testCase.zone, testCase.list, testCase.isAllowList)
+		require.Equal(t, testCase.expected, result, "case %d", i+1)
+	}
+}
+
 func newTestAccessBox(t *testing.T, key *keys.PrivateKey) *accessbox.Box {
 	var err error
 	if key == nil {
