@@ -452,6 +452,7 @@ pprof:
 # `prometheus` section
 
 Contains configuration for the `prometheus` metrics service.
+General metrics are available on `/metrics` url path, billing metrics on `/metrics/billing`.
 
 ```yaml
 prometheus:
