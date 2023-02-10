@@ -642,6 +642,12 @@ func (a *App) initHandler() {
 		cfg.CopiesNumber = val
 	}
 
+	cfg.ResolveZoneList = a.cfg.GetStringSlice(cfgResolveBucketAllow)
+	cfg.IsResolveListAllow = len(cfg.ResolveZoneList) > 0
+	if !cfg.IsResolveListAllow {
+		cfg.ResolveZoneList = a.cfg.GetStringSlice(cfgResolveBucketDeny)
+	}
+
 	var err error
 	a.api, err = handler.New(a.log, a.obj, a.nc, cfg)
 	if err != nil {

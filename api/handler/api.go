@@ -29,6 +29,8 @@ type (
 		DefaultMaxAge      int
 		NotificatorEnabled bool
 		CopiesNumber       uint32
+		ResolveZoneList    []string
+		IsResolveListAllow bool // True if ResolveZoneList contains allowed zones
 	}
 
 	PlacementPolicy interface {
