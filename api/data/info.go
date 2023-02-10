@@ -22,7 +22,8 @@ const (
 type (
 	// BucketInfo stores basic bucket data.
 	BucketInfo struct {
-		Name               string
+		Name               string // container name from system attribute
+		Zone               string // container zone from system attribute
 		CID                cid.ID
 		Owner              user.ID
 		Created            time.Time
