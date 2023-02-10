@@ -15,6 +15,7 @@ This document outlines major changes between releases.
 - Using multiple servers require only one healthy (TrueCloudLab#12)
 - Update go version to go1.18 (TrueCloudLab#16)
 - Return error on invalid LocationConstraint (TrueCloudLab#23)
+- Place billing metrics to separate url path (TrueCloudLab#26)
 
 ## [0.26.0] - 2022-12-28
 
