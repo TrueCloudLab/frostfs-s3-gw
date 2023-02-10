@@ -144,3 +144,8 @@ frostfs:
 allowed_access_key_id_prefixes:
   - Ck9BHsgKcnwfCTUSFm6pxhoNS4cBqgN2NQ8zVgPjqZDX
   - 3stjWenX15YwYzczMr88gy3CQr4NYFBQ8P7keGzH5QFn
+
+resolve_bucket:
+  allow:
+    - container
+  deny:
