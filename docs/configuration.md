@@ -168,21 +168,22 @@ There are some custom types used for brevity:
 
 ### Structure
 
-| Section            | Description                                                 |
-|--------------------|-------------------------------------------------------------|
-| no section         | [General parameters](#general-section)                      |
-| `wallet`           | [Wallet configuration](#wallet-section)                     |
-| `peers`            | [Nodes configuration](#peers-section)                       |
-| `placement_policy` | [Placement policy configuration](#placement_policy-section) |
-| `server`           | [Server configuration](#server-section)                     |
-| `logger`           | [Logger configuration](#logger-section)                     |
-| `tree`             | [Tree configuration](#tree-section)                         |
-| `cache`            | [Cache configuration](#cache-section)                       |
-| `nats`             | [NATS configuration](#nats-section)                         |
-| `cors`             | [CORS configuration](#cors-section)                         |
-| `pprof`            | [Pprof configuration](#pprof-section)                       |
-| `prometheus`       | [Prometheus configuration](#prometheus-section)             |
-| `frostfs`          | [Parameters of requests to FrostFS](#frostfs-section)       |
+| Section            | Description                                                    |
+|--------------------|----------------------------------------------------------------|
+| no section         | [General parameters](#general-section)                         |
+| `wallet`           | [Wallet configuration](#wallet-section)                        |
+| `peers`            | [Nodes configuration](#peers-section)                          |
+| `placement_policy` | [Placement policy configuration](#placement_policy-section)    |
+| `server`           | [Server configuration](#server-section)                        |
+| `logger`           | [Logger configuration](#logger-section)                        |
+| `tree`             | [Tree configuration](#tree-section)                            |
+| `cache`            | [Cache configuration](#cache-section)                          |
+| `nats`             | [NATS configuration](#nats-section)                            |
+| `cors`             | [CORS configuration](#cors-section)                            |
+| `pprof`            | [Pprof configuration](#pprof-section)                          |
+| `prometheus`       | [Prometheus configuration](#prometheus-section)                |
+| `frostfs`          | [Parameters of requests to FrostFS](#frostfs-section)          |
+| `resolve_bucket`   | [Bucket name resolving configuration](#resolve_bucket-section) |
 
 ### General section
 
@@ -478,3 +479,19 @@ frostfs:
 | Parameter           | Type     | Default value | Description                                                                                                                                                                 |
 |---------------------|----------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `set_copies_number` | `uint32` | `0`           | Number of the object copies to consider PUT to FrostFS successful. <br/>Default value `0` means that object will be processed according to the container's placement policy |
+
+# `resolve_bucket` section
+
+Bucket name resolving parameters from and to container ID with `HEAD` request.
+
+```yaml
+resolve_bucket:
+allow:
+  - container
+deny:
+```
+
+| Parameter | Type       | Default value | Description                                                                                                              |
+|-----------|------------|---------------|--------------------------------------------------------------------------------------------------------------------------|
+| `allow`   | `[]string` |               | List of container zones which are available to resolve. Mutual exclusive with `deny` list. Prioritized over `deny` list. |
+| `deny`    | `[]string` |               | List of container zones which are restricted to resolve. Mutual exclusive with `allow` list.                             |
