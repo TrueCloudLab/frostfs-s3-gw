@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	v2container "github.com/TrueCloudLab/frostfs-api-go/v2/container"
 	"github.com/TrueCloudLab/frostfs-s3-gw/api"
 	"github.com/TrueCloudLab/frostfs-s3-gw/api/data"
 	"github.com/TrueCloudLab/frostfs-s3-gw/api/errors"
@@ -56,6 +57,7 @@ func (n *layer) containerInfo(ctx context.Context, idCnr cid.ID) (*data.BucketIn
 	info.Owner = cnr.Owner()
 	if domain := container.ReadDomain(cnr); domain.Name() != "" {
 		info.Name = domain.Name()
+		info.Zone = domain.Zone()
 	}
 	info.Created = container.CreatedAt(cnr)
 	info.LocationConstraint = cnr.Attribute(attributeLocationConstraint)
@@ -114,6 +116,7 @@ func (n *layer) createContainer(ctx context.Context, p *CreateBucketParams) (*da
 	}
 	bktInfo := &data.BucketInfo{
 		Name:               p.Name,
+		Zone:               v2container.SysAttributeZoneDefault,
 		Owner:              ownerID,
 		Created:            TimeNow(ctx),
 		LocationConstraint: p.LocationConstraint,
