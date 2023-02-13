@@ -204,7 +204,7 @@ func (b *billingMetrics) Collect(ch chan<- prometheus.Metric) {
 			prometheus.NewDesc(
 				prometheus.BuildFQName(namespace, billingSubsystem, "user_traffic"),
 				"",
-				[]string{"user", "bucket", "cid", "type"}, nil),
+				[]string{"user", "bucket", "cid", "direction"}, nil),
 			prometheus.CounterValue,
 			float64(value.Value),
 			value.User,
