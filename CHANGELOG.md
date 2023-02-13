@@ -16,6 +16,7 @@ This document outlines major changes between releases.
 - Update go version to go1.18 (TrueCloudLab#16)
 - Return error on invalid LocationConstraint (TrueCloudLab#23)
 - Place billing metrics to separate url path (TrueCloudLab#26)
+- Add generated deb builder files to .gitignore, and fix typo (TrueCloudLab#28)
 
 ## [0.26.0] - 2022-12-28
 
