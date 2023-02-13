@@ -21,4 +21,11 @@ coverage.txt
 coverage.html
 
 # debhelpers
-**/.debhelper
+**/*debhelper*
+
+# debian package build files
+debian/files
+debian/*.log
+debian/*.substvars
+debian/frostfs-s3-gw/
+
