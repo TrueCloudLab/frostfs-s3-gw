@@ -8,6 +8,7 @@ This document outlines major changes between releases.
 - Return container name in `head-bucket` response (TrueCloudLab#18)
 - Billing metrics (TrueCloudLab#5)
 - Multiple configs support (TrueCloudLab#21)
+- Bucket name resolving policy (TrueCloudLab#25)
 
 ### Changed
 - Update neo-go to v0.101.0 (#14)
