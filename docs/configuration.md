@@ -486,9 +486,9 @@ Bucket name resolving parameters from and to container ID with `HEAD` request.
 
 ```yaml
 resolve_bucket:
-allow:
-  - container
-deny:
+  allow:
+    - container
+  deny:
 ```
 
 | Parameter | Type       | Default value | Description                                                                                                              |
