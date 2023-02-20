@@ -4,6 +4,9 @@ This document outlines major changes between releases.
 
 ## [Unreleased]
 
+### Fixed
+- Get empty bucket CORS from frostfs (TrueCloudLab#36)
+
 ### Added
 - Return container name in `head-bucket` response (TrueCloudLab#18)
 - Billing metrics (TrueCloudLab#5)
