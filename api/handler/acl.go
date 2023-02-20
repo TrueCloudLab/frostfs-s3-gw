@@ -158,6 +158,90 @@ func (s ServiceRecord) ToEACLRecord() *eacl.Record {
 	return serviceRecord
 }
 
+var (
+	errInvalidStatement = stderrors.New("invalid statement")
+	errInvalidPrincipal = stderrors.New("invalid principal")
+)
+
+func (s *statement) UnmarshalJSON(data []byte) error {
+	var statementMap map[string]interface{}
+	if err := json.Unmarshal(data, &statementMap); err != nil {
+		return err
+	}
+
+	sidField, ok := statementMap["Sid"]
+	if ok {
+		if s.Sid, ok = sidField.(string); !ok {
+			return errInvalidStatement
+		}
+	}
+
+	effectField, ok := statementMap["Effect"]
+	if ok {
+		if s.Effect, ok = effectField.(string); !ok {
+			return errInvalidStatement
+		}
+	}
+
+	principalField, ok := statementMap["Principal"]
+	if ok {
+		principalMap, ok := principalField.(map[string]interface{})
+		if !ok {
+			return errInvalidPrincipal
+		}
+
+		awsField, ok := principalMap["AWS"]
+		if ok {
+			if s.Principal.AWS, ok = awsField.(string); !ok {
+				return fmt.Errorf("%w: 'AWS' field must be string", errInvalidPrincipal)
+			}
+		}
+
+		canonicalUserField, ok := principalMap["CanonicalUser"]
+		if ok {
+			if s.Principal.CanonicalUser, ok = canonicalUserField.(string); !ok {
+				return errInvalidPrincipal
+			}
+		}
+	}
+
+	actionField, ok := statementMap["Action"]
+	if ok {
+		switch actionField := actionField.(type) {
+		case []interface{}:
+			s.Action = make([]string, len(actionField))
+			for i, action := range actionField {
+				if s.Action[i], ok = action.(string); !ok {
+					return errInvalidStatement
+				}
+			}
+		case string:
+			s.Action = []string{actionField}
+		default:
+			return errInvalidStatement
+		}
+	}
+
+	resourceField, ok := statementMap["Resource"]
+	if ok {
+		switch resourceField := resourceField.(type) {
+		case []interface{}:
+			s.Resource = make([]string, len(resourceField))
+			for i, action := range resourceField {
+				if s.Resource[i], ok = action.(string); !ok {
+					return errInvalidStatement
+				}
+			}
+		case string:
+			s.Resource = []string{resourceField}
+		default:
+			return errInvalidStatement
+		}
+	}
+
+	return nil
+}
+
 func (h *handler) GetBucketACLHandler(w http.ResponseWriter, r *http.Request) {
 	reqInfo := api.GetReqInfo(r.Context())
 

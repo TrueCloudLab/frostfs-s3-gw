@@ -12,6 +12,7 @@ This document outlines major changes between releases.
 - Billing metrics (TrueCloudLab#5)
 - Multiple configs support (TrueCloudLab#21)
 - Bucket name resolving policy (TrueCloudLab#25)
+- Support string `Action` and `Resource` fields in `bucketPolicy.Statement` (TrueCloudLab#32)
 
 ### Changed
 - Update neo-go to v0.101.0 (#14)

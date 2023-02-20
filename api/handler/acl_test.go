@@ -1352,6 +1352,85 @@ func TestBucketPolicy(t *testing.T) {
 	}
 }
 
+func TestBucketPolicyUnmarshal(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		policy string
+	}{
+		{
+			name: "action/resource array",
+			policy: `
+{
+	"Version": "2012-10-17",
+	"Statement": [{
+		"Principal": {
+			"AWS": "arn:aws:iam::111122223333:role/JohnDoe"
+		},
+		"Effect": "Allow",
+		"Action": [
+			"s3:GetObject", 
+			"s3:GetObjectVersion"
+		],
+		"Resource": [
+			"arn:aws:s3:::DOC-EXAMPLE-BUCKET/*",
+			"arn:aws:s3:::DOC-EXAMPLE-BUCKET2/*"
+		]
+	}]
+}
+`,
+		},
+		{
+			name: "action/resource string",
+			policy: `
+{
+	"Version": "2012-10-17",
+	"Statement": [{
+		"Principal": {
+			"AWS": "arn:aws:iam::111122223333:role/JohnDoe"
+		},
+		"Effect": "Deny",
+		"Action": "s3:GetObject",
+		"Resource": "arn:aws:s3:::DOC-EXAMPLE-BUCKET/*"
+	}]
+}
+`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			bktPolicy := &bucketPolicy{}
+			err := json.Unmarshal([]byte(tc.policy), bktPolicy)
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestPutBucketPolicy(t *testing.T) {
+	bktPolicy := `
+{
+	"Version": "2012-10-17",
+	"Statement": [{
+		"Principal": {
+			"AWS": "*"
+		},
+		"Effect": "Deny",
+		"Action": "s3:GetObject",
+		"Resource": "arn:aws:s3:::bucket-for-policy/*"
+	}]
+}
+`
+	hc := prepareHandlerContext(t)
+	bktName := "bucket-for-policy"
+
+	box, _ := createAccessBox(t)
+	createBucket(t, hc, bktName, box)
+
+	w, r := prepareTestPayloadRequest(hc, bktName, "", bytes.NewReader([]byte(bktPolicy)))
+	ctx := context.WithValue(r.Context(), api.BoxData, box)
+	r = r.WithContext(ctx)
+	hc.Handler().PutBucketPolicyHandler(w, r)
+	assertStatus(hc.t, w, http.StatusOK)
+}
+
 func getBucketPolicy(hc *handlerContext, bktName string) *bucketPolicy {
 	w, r := prepareTestRequest(hc, bktName, "", nil)
 	hc.Handler().GetBucketPolicyHandler(w, r)
