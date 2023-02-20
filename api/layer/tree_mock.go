@@ -109,11 +109,32 @@ func (t *TreeServiceMock) PutNotificationConfigurationNode(ctx context.Context, 
 }
 
 func (t *TreeServiceMock) GetBucketCORS(ctx context.Context, bktInfo *data.BucketInfo) (oid.ID, error) {
-	panic("implement me")
+	systemMap, ok := t.system[bktInfo.CID.EncodeToString()]
+	if !ok {
+		return oid.ID{}, nil
+	}
+
+	node, ok := systemMap["cors"]
+	if !ok {
+		return oid.ID{}, nil
+	}
+
+	return node.OID, nil
 }
 
 func (t *TreeServiceMock) PutBucketCORS(ctx context.Context, bktInfo *data.BucketInfo, objID oid.ID) (oid.ID, error) {
-	panic("implement me")
+	systemMap, ok := t.system[bktInfo.CID.EncodeToString()]
+	if !ok {
+		systemMap = make(map[string]*data.BaseNodeVersion)
+	}
+
+	systemMap["cors"] = &data.BaseNodeVersion{
+		OID: objID,
+	}
+
+	t.system[bktInfo.CID.EncodeToString()] = systemMap
+
+	return oid.ID{}, ErrNoNodeToRemove
 }
 
 func (t *TreeServiceMock) DeleteBucketCORS(ctx context.Context, bktInfo *data.BucketInfo) (oid.ID, error) {

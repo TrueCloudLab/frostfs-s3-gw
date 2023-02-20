@@ -39,7 +39,7 @@ func (n *layer) PutBucketCORS(ctx context.Context, p *PutCORSParams) error {
 	prm := PrmObjectCreate{
 		Container:    p.BktInfo.CID,
 		Creator:      p.BktInfo.Owner,
-		Payload:      p.Reader,
+		Payload:      &buf,
 		Filepath:     p.BktInfo.CORSObjectName(),
 		CreationTime: TimeNow(ctx),
 		CopiesNumber: p.CopiesNumber,
