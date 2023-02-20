@@ -144,7 +144,7 @@ func (t *TestFrostFS) ReadObject(ctx context.Context, prm PrmObjectRead) (*Objec
 
 	if obj, ok := t.objects[sAddr]; ok {
 		owner := getOwner(ctx)
-		if !obj.OwnerID().Equals(owner) {
+		if !obj.OwnerID().Equals(owner) && !t.isPublicRead(prm.Container) {
 			return nil, ErrAccessDenied
 		}
 
@@ -280,6 +280,25 @@ func (t *TestFrostFS) ContainerEACL(_ context.Context, cnrID cid.ID) (*eacl.Tabl
 	}
 
 	return table, nil
+}
+
+func (t *TestFrostFS) isPublicRead(cnrID cid.ID) bool {
+	table, ok := t.eaclTables[cnrID.EncodeToString()]
+	if !ok {
+		return false
+	}
+
+	for _, rec := range table.Records() {
+		if rec.Operation() == eacl.OperationGet && len(rec.Filters()) == 0 {
+			for _, trgt := range rec.Targets() {
+				if trgt.Role() == eacl.RoleOthers {
+					return rec.Action() == eacl.ActionAllow
+				}
+			}
+		}
+	}
+
+	return false
 }
 
 func getOwner(ctx context.Context) user.ID {
