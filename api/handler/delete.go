@@ -17,6 +17,9 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// limitation of AWS https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObjects.html
+const maxObjectsToDelete = 1000
+
 // DeleteObjectsRequest -- xml carrying the object key names which should be deleted.
 type DeleteObjectsRequest struct {
 	// Element to enable quiet mode for the request
@@ -173,6 +176,11 @@ func (h *handler) DeleteMultipleObjectsHandler(w http.ResponseWriter, r *http.Re
 	requested := &DeleteObjectsRequest{}
 	if err := xml.NewDecoder(r.Body).Decode(requested); err != nil {
 		h.logAndSendError(w, "couldn't decode body", reqInfo, errors.GetAPIError(errors.ErrMalformedXML))
+		return
+	}
+
+	if len(requested.Objects) == 0 || len(requested.Objects) > maxObjectsToDelete {
+		h.logAndSendError(w, "number of objects to delete must be greater than 0 and less or equal to 1000", reqInfo, errors.GetAPIError(errors.ErrMalformedXML))
 		return
 	}
 
