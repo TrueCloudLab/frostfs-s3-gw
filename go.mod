@@ -24,6 +24,11 @@ require (
 	google.golang.org/protobuf v1.28.1
 )
 
+replace (
+	github.com/TrueCloudLab/frostfs-api-go/v2 v2.0.0-20221212144048-1351b6656d68 => github.com/KirillovDenis/frostfs-api-go/v2 v2.11.2-0.20230221082308-ac00938fa447
+	github.com/TrueCloudLab/frostfs-sdk-go v0.0.0-20230130120602-cf64ddfb143c => github.com/KirillovDenis/frostfs-sdk-go v0.0.0-20230221122223-9424a67fb108
+)
+
 require (
 	github.com/TrueCloudLab/frostfs-contract v0.0.0-20221213081248-6c805c1b4e42 // indirect
 	github.com/TrueCloudLab/frostfs-crypto v0.5.0

@@ -349,11 +349,12 @@ func buildBearerToken(key *keys.PrivateKey, table *eacl.Table, lifetime lifetime
 	user.IDFromKey(&ownerID, (ecdsa.PublicKey)(*gateKey))
 
 	var bearerToken bearer.Token
-	bearerToken.SetEACLTable(*table)
+	bearerToken.SetEACLTable(*eacl.NewTable())
 	bearerToken.ForUser(ownerID)
 	bearerToken.SetExp(lifetime.Exp)
 	bearerToken.SetIat(lifetime.Iat)
 	bearerToken.SetNbf(lifetime.Iat)
+	bearerToken.SetImpersonate(true)
 
 	err := bearerToken.Sign(key.PrivateKey)
 	if err != nil {

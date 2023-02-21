@@ -14,7 +14,6 @@ import (
 	"github.com/TrueCloudLab/frostfs-s3-gw/api/layer"
 	"github.com/TrueCloudLab/frostfs-s3-gw/creds/accessbox"
 	"github.com/TrueCloudLab/frostfs-s3-gw/internal/frostfs/services/tree"
-	"github.com/TrueCloudLab/frostfs-sdk-go/bearer"
 	oid "github.com/TrueCloudLab/frostfs-sdk-go/object/id"
 	"github.com/TrueCloudLab/frostfs-sdk-go/user"
 	"github.com/nspcc-dev/neo-go/pkg/crypto/keys"
@@ -1262,9 +1261,7 @@ func handleError(msg string, err error) error {
 func getBearer(ctx context.Context, bktInfo *data.BucketInfo) []byte {
 	if bd, ok := ctx.Value(api.BoxData).(*accessbox.Box); ok && bd != nil && bd.Gate != nil {
 		if bd.Gate.BearerToken != nil {
-			if bktInfo.Owner.Equals(bearer.ResolveIssuer(*bd.Gate.BearerToken)) {
-				return bd.Gate.BearerToken.Marshal()
-			}
+			return bd.Gate.BearerToken.Marshal()
 		}
 	}
 	return nil
