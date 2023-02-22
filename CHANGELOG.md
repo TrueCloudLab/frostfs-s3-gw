@@ -21,6 +21,7 @@ This document outlines major changes between releases.
 - Return error on invalid LocationConstraint (TrueCloudLab#23)
 - Place billing metrics to separate url path (TrueCloudLab#26)
 - Add generated deb builder files to .gitignore, and fix typo (TrueCloudLab#28)
+- Limit number of objects to delete at one time (TrueCloudLab#37) 
 
 ## [0.26.0] - 2022-12-28
 
