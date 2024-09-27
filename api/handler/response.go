@@ -70,21 +70,50 @@ type Grant struct {
 
 // Grantee is info about access rights of some actor.
 type Grantee struct {
-	XMLName      xml.Name    `xml:"Grantee"`
-	XMLNS        string      `xml:"xmlns:xsi,attr"`
-	ID           string      `xml:"ID,omitempty"`
-	DisplayName  string      `xml:"DisplayName,omitempty"`
-	EmailAddress string      `xml:"EmailAddress,omitempty"`
-	URI          string      `xml:"URI,omitempty"`
-	Type         GranteeType `xml:"xsi:type,attr"`
+	XMLName      xml.Name `xml:"Grantee"`
+	XMLNS        xml.Attr `xml:"xsi,attr"`
+	ID           string   `xml:"ID,omitempty"`
+	DisplayName  string   `xml:"DisplayName,omitempty"`
+	EmailAddress string   `xml:"EmailAddress,omitempty"`
+	URI          string   `xml:"URI,omitempty"`
+	Type         xml.Attr `xml:"type,attr"`
 }
 
-// NewGrantee creates new grantee using workaround
-// https://github.com/golang/go/issues/9519#issuecomment-252196382
-func NewGrantee(t GranteeType) *Grantee {
+func (g Grantee) matchType(t string) bool {
+	return g.Type.Value == t
+}
+
+func (g Grantee) TypeString() string {
+	return g.Type.Value
+}
+
+func formGranteeType(str string) xml.Attr {
+	return xml.Attr{
+		Name: xml.Name{
+			Space: "xsi",
+			Local: "type",
+		},
+		Value: str,
+	}
+}
+
+const granteeXMLNS = "http://www.w3.org/2001/XMLSchema-instance"
+
+// NewGrantee creates new grantee.
+func NewGrantee(t xml.Attr) *Grantee {
 	return &Grantee{
-		XMLNS: "http://www.w3.org/2001/XMLSchema-instance",
-		Type:  t,
+		XMLName: xml.Name{
+			Local: "Grantee",
+		},
+
+		XMLNS: xml.Attr{
+			Name: xml.Name{
+				Space: "xmlns",
+				Local: "xsi",
+			},
+			Value: granteeXMLNS,
+		},
+		Type: t,
 	}
 }
 
